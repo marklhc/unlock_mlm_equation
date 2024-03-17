@@ -1,0 +1,620 @@
+---
+references:
+- id: aguinis2015
+  abstract: >-
+    Cross-level interaction effects lay at the heart of multilevel contingency
+    and interactionism theories. Also, practitioners are particularly interested
+    in such effects because they provide information on the contextual
+    conditions and processes under which interventions focused on individuals
+    (e.g., selection, leadership training, performance appraisal, and
+    management) result in more or less positive outcomes. We derive a new
+    intraclass correlation, ρ
+                  β
+                  , to assess the degree of lower-level outcome variance that is attributed to higher-level differences in slope coefficients. We provide analytical and empirical evidence that ρ
+                  β
+                  is an index of variance that differs from the traditional intraclass correlation ρ
+                  α
+                  and use data from recently published articles to illustrate that ρ
+                  α
+                  assesses differences across collectives and higher-level processes (e.g., teams, leadership styles, reward systems) but ignores the variance attributed to differences in lower-level relationships (e.g., individual level job satisfaction and individual level performance). Because ρ
+                  α
+                  and ρ
+                  β
+                  provide information on two different sources of variability in the data structure (i.e., differences in means and differences in relationships, respectively), our results suggest that researchers contemplating the use of multilevel modeling, as well those who suspect nonindependence in their data structure, should expand the decision criteria for using multilevel approaches to include both types of intraclass correlations. To facilitate this process, we offer an illustrative data set and the icc beta R package for computing ρ
+                  β
+                  in single- and multiple-predictor situations and make them available through the Comprehensive R Archive Network (i.e., CRAN).
+  accessed:
+    - year: 2024
+      month: 3
+      day: 11
+  author:
+    - family: Aguinis
+      given: Herman
+    - family: Culpepper
+      given: Steven Andrew
+  citation-key: aguinis2015
+  container-title: Organizational Research Methods
+  container-title-short: Organizational Research Methods
+  DOI: 10.1177/1094428114563618
+  ISSN: 1094-4281, 1552-7425
+  issue: '2'
+  issued:
+    - year: 2015
+      month: 4
+  language: en
+  page: 155-176
+  source: DOI.org (Crossref)
+  title: >-
+    An expanded decision-making procedure for examining cross-level interaction
+    effects With multilevel modeling
+  type: article-journal
+  URL: http://journals.sagepub.com/doi/10.1177/1094428114563618
+  volume: '18'
+
+- id: greene2018
+  author:
+    - family: Greene
+      given: William
+  citation-key: greene2018
+  edition: Eighth edition
+  event-place: New York, NY
+  ISBN: 978-0-13-446136-6
+  issued:
+    - year: 2018
+  language: eng
+  number-of-pages: '1126'
+  publisher: Pearson
+  publisher-place: New York, NY
+  source: K10plus ISBN
+  title: Econometric analysis
+  type: book
+
+- id: hedges2009
+  author:
+    - family: Hedges
+      given: Larry V.
+  citation-key: hedges2009
+  container-author:
+    - family: Cooper
+      given: Harris
+    - family: Hedges
+      given: Larry V.
+    - family: Valentine
+      given: Jeffrey C.
+  container-title: The handbook of research synthesis and meta-analysis
+  edition: '2'
+  ISBN: 978-0-87154-163-5
+  issued:
+    - year: 2009
+  page: 337-355
+  publisher: Russell Sage Foundation
+  title: Effect sizes in nested designs
+  type: chapter
+
+- id: hsiao2018
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Hsiao
+      given: Yu-Yu
+    - family: Lai
+      given: Mark H. C.
+  citation-key: hsiao2018
+  container-title: Frontiers in Psychology
+  container-title-short: Front. Psychol.
+  DOI: 10.3389/fpsyg.2018.00740
+  ISSN: 1664-1078
+  issued:
+    - year: 2018
+      month: 5
+      day: 15
+  page: '740'
+  source: DOI.org (Crossref)
+  title: >-
+    The impact of partial measurement invariance on testing moderation for
+    single and multi-level data
+  type: article-journal
+  URL: http://journal.frontiersin.org/article/10.3389/fpsyg.2018.00740/full
+  volume: '9'
+
+- id: johnson2014
+  abstract: |-
+    Summary
+                
+                  
+                    
+                      
+                        Nakagawa & Schielzeth extended the widely used goodness‐of‐fit statistic
+                        R
+                        2
+                        to apply to generalized linear mixed models (
+                        GLMM
+                        s). However, their
+                        R
+                        2
+                        
+                          GLMM
+                        
+                        method is restricted to models with the simplest random effects structure, known as random intercepts models. It is not applicable to another common random effects structure, random slopes models.
+                      
+                    
+                    
+                      
+                        I show that
+                        R
+                        2
+                        
+                          GLMM
+                        
+                        can be extended to random slopes models using a simple formula that is straightforward to implement in statistical software. This extension substantially widens the potential application of
+                        R
+                        2
+                        
+                          GLMM
+                        
+                        .
+  accessed:
+    - year: 2024
+      month: 3
+      day: 10
+  author:
+    - family: Johnson
+      given: Paul C.D.
+  citation-key: johnson2014
+  container-title: Methods in Ecology and Evolution
+  container-title-short: Methods Ecol Evol
+  DOI: 10.1111/2041-210X.12225
+  editor:
+    - family: O'Hara
+      given: Robert B.
+  ISSN: 2041-210X, 2041-210X
+  issue: '9'
+  issued:
+    - year: 2014
+      month: 9
+  language: en
+  page: 944-946
+  source: DOI.org (Crossref)
+  title: Extension of Nakagawa & Schielzeth's *R* ^2^ ~GLMM~ to random slopes models
+  type: article-journal
+  URL: https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12225
+  volume: '5'
+
+- id: lai2014
+  abstract: >-
+    Multilevel modeling techniques are becoming more popular in handling data
+    with multilevel structure in educational and behavioral research. Recently,
+    researchers have paid more attention to cross-classified data structure that
+    naturally arises in educational settings. However, unlike traditional
+    single-level research, methodological studies about multilevel effect size
+    have been rare and those that have recently appeared had an emphasis on
+    strictly hierarchical data structure. This article extends the work on
+    multilevel standardized mean differences from strictly hierarchical
+    structure to both fully and partially cross-classified structures.
+    Analytically derived formulae for calculating effect sizes and the
+    corresponding sampling variances (or standard errors) are presented,
+    verified by simulation results, and illustrated with real data examples.
+    Implications for primary research studies and meta-analyses are discussed.
+  accessed:
+    - year: 2023
+      month: 6
+      day: 1
+  author:
+    - family: Lai
+      given: Mark H. C.
+    - family: Kwok
+      given: Oi-Man
+  citation-key: lai2014
+  container-title: Journal of Educational and Behavioral Statistics
+  container-title-short: Journal of Educational and Behavioral Statistics
+  DOI: 10.3102/1076998614532950
+  ISSN: 1076-9986, 1935-1054
+  issue: '4'
+  issued:
+    - year: 2014
+      month: 8
+  language: en
+  page: 282-302
+  source: DOI.org (Crossref)
+  title: >-
+    Standardized mean differences in two-level cross-classified random effects
+    models
+  type: article-journal
+  URL: http://journals.sagepub.com/doi/10.3102/1076998614532950
+  volume: '39'
+
+- id: lai2015
+  accessed:
+    - year: 2023
+      month: 6
+      day: 1
+  author:
+    - family: Lai
+      given: Mark H. C.
+    - family: Kwok
+      given: Oi-man
+  citation-key: lai2015
+  container-title: The Journal of Experimental Education
+  container-title-short: The Journal of Experimental Education
+  DOI: 10.1080/00220973.2014.907229
+  ISSN: 0022-0973, 1940-0683
+  issue: '3'
+  issued:
+    - year: 2015
+      month: 7
+      day: 3
+  language: en
+  page: 423-438
+  source: DOI.org (Crossref)
+  title: >-
+    Examining the rule of thumb of not using multilevel modeling: The “design
+    effect smaller than two” rule
+  title-short: Examining the Rule of Thumb of Not Using Multilevel Modeling
+  type: article-journal
+  URL: http://www.tandfonline.com/doi/full/10.1080/00220973.2014.907229
+  volume: '83'
+
+- id: lai2016
+  accessed:
+    - year: 2023
+      month: 6
+      day: 1
+  author:
+    - family: Lai
+      given: Mark H. C.
+    - family: Kwok
+      given: Oi-man
+  citation-key: lai2016
+  container-title: Multivariate Behavioral Research
+  container-title-short: Multivariate Behavioral Research
+  DOI: 10.1080/00273171.2016.1231606
+  ISSN: 0027-3171, 1532-7906
+  issued:
+    - year: 2016
+      month: 11
+  language: en
+  page: 1-17
+  source: DOI.org (Crossref)
+  title: >-
+    Estimating standardized effect sizes for two- and three-level partially
+    nested data
+  type: article-journal
+  URL: https://www.tandfonline.com/doi/full/10.1080/00273171.2016.1231606
+
+- id: lai2018
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Lai
+      given: Mark H. C.
+    - family: Kwok
+      given: Oi-man
+    - family: Hsiao
+      given: Yu-Yu
+    - family: Cao
+      given: Qian
+  citation-key: lai2018
+  container-title: Psychological Methods
+  container-title-short: Psychological Methods
+  DOI: 10.1037/met0000137
+  ISSN: 1939-1463, 1082-989X
+  issue: '1'
+  issued:
+    - year: 2018
+      month: 3
+  language: en
+  page: 94-112
+  source: DOI.org (Crossref)
+  title: Finite population correction for two-level hierarchical linear models.
+  type: article-journal
+  URL: http://doi.apa.org/getdoi.cfm?doi=10.1037/met0000137
+  volume: '23'
+
+- id: lai2019
+  abstract: >-
+    Previous studies have detailed the consequence of ignoring a level of
+    clustering in multilevel models with straightly hierarchical structures and
+    have proposed methods to adjust for the fixed effect standard errors ( SEs).
+    However, in behavioral and social science research, there are usually two or
+    more crossed clustering levels, such as when students are cross-classified
+    by schools and neighborhoods, yet it is not uncommon that researchers focus
+    only on one level of clustering. Using the generalized least squares
+    framework, in this study, we derive the bias in the fixed effect SE
+    estimators when one crossed random effect is omitted. We then showed, using
+    data from the Scotland Neighborhood Study, how one can correct for the SEs
+    and obtain corrected statistical inference when a misspecified two-level
+    model was used in a primary study, which is useful when evaluating
+    observational studies or cluster randomized trials that ignored a crossed
+    random effects or when conducting meta-analyses. In addition, our analytic
+    results provide theoretical insights on how one can quantify imbalance with
+    cross-classified data by the strength of association between the two-crossed
+    random effects in a contingency table and how the degree of imbalance
+    relates to the correction factor for the fixed effect SEs.
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Lai
+      given: Mark H. C.
+  citation-key: lai2019
+  container-title: Journal of Educational and Behavioral Statistics
+  container-title-short: Journal of Educational and Behavioral Statistics
+  DOI: 10.3102/1076998619843168
+  ISSN: 1076-9986, 1935-1054
+  issue: '4'
+  issued:
+    - year: 2019
+      month: 8
+  language: en
+  page: 448-472
+  source: DOI.org (Crossref)
+  title: >-
+    Correcting fixed effect standard errors when a crossed random effect was
+    ignored for balanced and unbalanced designs
+  type: article-journal
+  URL: http://journals.sagepub.com/doi/10.3102/1076998619843168
+  volume: '44'
+
+- id: lai2021
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Lai
+      given: Mark H. C.
+  citation-key: lai2021
+  container-title: Multivariate Behavioral Research
+  container-title-short: Multivariate Behavioral Research
+  DOI: 10.1080/00273171.2020.1746902
+  ISSN: 0027-3171, 1532-7906
+  issue: '4'
+  issued:
+    - year: 2021
+      month: 7
+      day: 4
+  language: en
+  page: 558-578
+  source: DOI.org (Crossref)
+  title: Bootstrap confidence intervals for multilevel standardized effect size
+  type: article-journal
+  URL: https://www.tandfonline.com/doi/full/10.1080/00273171.2020.1746902
+  volume: '56'
+
+- id: lai2021a
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Lai
+      given: Mark H. C.
+  citation-key: lai2021a
+  container-title: Psychological Methods
+  container-title-short: Psychological Methods
+  DOI: 10.1037/met0000287
+  ISSN: 1939-1463, 1082-989X
+  issue: '1'
+  issued:
+    - year: 2021
+      month: 2
+  language: en
+  page: 90-102
+  source: DOI.org (Crossref)
+  title: >-
+    Composite reliability of multilevel data: It’s about observed scores and
+    construct meanings.
+  title-short: Composite reliability of multilevel data
+  type: article-journal
+  URL: http://doi.apa.org/getdoi.cfm?doi=10.1037/met0000287
+  volume: '26'
+
+- id: luo2021
+  abstract: >-
+    Multilevel modeling is often used to analyze survey data collected with a
+    multistage sampling design. When the selection is informative, sampling
+    weights need to be incorporated in the estimation. We propose a weighted
+    residual bootstrap method as an alternative to the multilevel pseudo-maximum
+    likelihood (MPML) estimators. In a Monte Carlo simulation using two-level
+    linear mixed effects models, the bootstrap method showed advantages over
+    MPML for the estimates and the statistical inferences of the intercept, the
+    slope of the level-2 predictor, and the variance components at level-2. The
+    impact of sample size, selection mechanism, intraclass correlation (ICC),
+    and distributional assumptions on the performance of the methods were
+    examined. The performance of MPML was suboptimal when sample size and ICC
+    were small and when the normality assumption was violated. The bootstrap
+    estimates performed generally well across all the simulation conditions, but
+    had notably suboptimal performance in estimating the covariance component in
+    a random slopes model when sample size and ICCs were large. As an
+    illustration, the bootstrap method is applied to the American data of the
+    OECD’s Program for International Students Assessment (PISA) survey on math
+    achievement using the R package bootmlm.
+  accessed:
+    - year: 2023
+      month: 6
+      day: 26
+  author:
+    - family: Luo
+      given: Wen
+    - family: Lai
+      given: Hok Chio
+  citation-key: luo2021
+  container-title: Journal of Behavioral Data Science
+  container-title-short: JBDS
+  DOI: 10.35566/jbds/v1n2/p6
+  ISSN: 2575-8306, 2574-1284
+  issued:
+    - year: 2021
+      month: 12
+      day: 2
+  source: DOI.org (Crossref)
+  title: >-
+    A weighted residual bootstrap method for multilevel modeling with sampling
+    weights
+  type: article-journal
+  URL: https://jbds.isdsa.org/index.php/jbds/article/view/30
+
+- id: murayama2022
+  accessed:
+    - year: 2024
+      month: 3
+      day: 13
+  author:
+    - family: Murayama
+      given: Kou
+    - family: Usami
+      given: Satoshi
+    - family: Sakaki
+      given: Michiko
+  citation-key: murayama2022
+  container-title: Psychological Methods
+  container-title-short: Psychological Methods
+  DOI: 10.1037/met0000330
+  ISSN: 1939-1463, 1082-989X
+  issued:
+    - year: 2022
+      month: 1
+      day: 31
+  language: en
+  source: DOI.org (Crossref)
+  title: >-
+    Summary-statistics-based power analysis: A new and practical method to
+    determine sample size for mixed-effects modeling.
+  title-short: Summary-statistics-based power analysis
+  type: article-journal
+  URL: https://doi.apa.org/doi/10.1037/met0000330
+
+- id: rights2019
+  accessed:
+    - year: 2024
+      month: 3
+      day: 10
+  author:
+    - family: Rights
+      given: Jason D.
+    - family: Sterba
+      given: Sonya K.
+  citation-key: rights2019
+  container-title: Psychological Methods
+  container-title-short: Psychological Methods
+  DOI: 10.1037/met0000184
+  ISSN: 1939-1463, 1082-989X
+  issue: '3'
+  issued:
+    - year: 2019
+      month: 6
+  language: en
+  page: 309-338
+  source: DOI.org (Crossref)
+  title: >-
+    Quantifying explained variance in multilevel models: An integrative
+    framework for defining R-squared measures.
+  title-short: Quantifying explained variance in multilevel models
+  type: article-journal
+  URL: https://doi.apa.org/doi/10.1037/met0000184
+  volume: '24'
+
+- id: rights2023
+  accessed:
+    - year: 2024
+      month: 3
+      day: 10
+  author:
+    - family: Rights
+      given: Jason D.
+    - family: Sterba
+      given: Sonya K.
+  citation-key: rights2023
+  container-title: Multivariate Behavioral Research
+  container-title-short: Multivariate Behavioral Research
+  DOI: 10.1080/00273171.2021.1985948
+  ISSN: 0027-3171, 1532-7906
+  issue: '2'
+  issued:
+    - year: 2023
+      month: 3
+      day: 4
+  language: en
+  page: 340-367
+  source: DOI.org (Crossref)
+  title: R-squared measures for multilevel models with three or more levels
+  type: article-journal
+  URL: https://www.tandfonline.com/doi/full/10.1080/00273171.2021.1985948
+  volume: '58'
+
+- id: snijders1993
+  abstract: >-
+    The hierarchical linear model approach to a two-level design is considered,
+    some variables at the lower level having fixed and others having random
+    regression coefficients. An approximation is derived to the covariance
+    matrix of the estimators of the fixed regression coefficients (for variables
+    at the lower and the higher level) under the assumption that the sample
+    sizes at either level are large enough. This covariance matrix is expressed
+    as a function of parameters occurring in the model. If a research planner
+    can make a reasonable guess as to these parameters, this approximation can
+    be used as a guide to the choice of sample sizes at either level.
+  accessed:
+    - year: 2024
+      month: 3
+      day: 13
+  author:
+    - family: Snijders
+      given: Tom A. B.
+    - family: Bosker
+      given: Roel J.
+  citation-key: snijders1993
+  container-title: Journal of Educational Statistics
+  container-title-short: Journal of Educational Statistics
+  DOI: 10.3102/10769986018003237
+  ISSN: 0362-9791
+  issue: '3'
+  issued:
+    - year: 1993
+      month: 9
+  language: en
+  page: 237-259
+  source: DOI.org (Crossref)
+  title: Standard errors and sample sizes for two-level research
+  type: article-journal
+  URL: http://journals.sagepub.com/doi/10.3102/10769986018003237
+  volume: '18'
+
+- id: zhang2024
+  abstract: |-
+    Abstract
+                
+                  Multilevel modeling (MLM) is commonly used in psychological research to model clustered data. However, data in applied research usually violate one of the essential assumptions of MLM—homogeneity of variance. While the fixed-effect estimates produced by the maximum likelihood method remain unbiased, the standard errors for the fixed effects are misestimated, resulting in inaccurate inferences and inflated or deflated type I error rates. To correct the bias in fixed effects standard errors and provide valid inferences, small-sample corrections such as the Kenward-Roger (KR) adjustment and the adjusted cluster-robust standard errors (CR-SEs) with the Satterthwaite approximation for
+                  t
+                  tests have been used. The current study compares KR with random slope (RS) models and the adjusted CR-SEs with ordinary least squares (OLS), random intercept (RI) and RS models to analyze small, heteroscedastic, clustered data using a Monte Carlo simulation. Results show the KR procedure with RS models has large biases and inflated type I error rates for between-cluster effects in the presence of level 2 heteroscedasticity. In contrast, the adjusted CR-SEs generally yield results with acceptable biases and maintain type I error rates close to the nominal level for all examined models. Thus, when the interest is only in within-cluster effect, any model with the adjusted CR-SEs could be used. However, when the interest is to make accurate inferences of the between-cluster effect, researchers should use the adjusted CR-SEs with RS to have higher power and guard against unmodeled heterogeneity. We reanalyzed an example in Snijders & Bosker (2012) to demonstrate the use of the adjusted CR-SEs with different models.
+  accessed:
+    - year: 2024
+      month: 3
+      day: 13
+  author:
+    - family: Zhang
+      given: Yichi
+    - family: Lai
+      given: Mark H. C.
+  citation-key: zhang2024
+  container-title: Behavior Research Methods
+  container-title-short: Behav Res
+  DOI: 10.3758/s13428-023-02325-9
+  ISSN: 1554-3528
+  issued:
+    - year: 2024
+      month: 2
+      day: 6
+  language: en
+  source: DOI.org (Crossref)
+  title: >-
+    Evaluating two small-sample corrections for fixed-effects standard errors
+    and inferences in multilevel models with heteroscedastic, unbalanced,
+    clustered data
+  type: article-journal
+  URL: https://link.springer.com/10.3758/s13428-023-02325-9
+...

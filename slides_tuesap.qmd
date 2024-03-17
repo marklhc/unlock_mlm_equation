@@ -1,0 +1,1502 @@
+---
+title: "Unlocking the Multilevel Equation"
+subtitle: "Multicollinearity, Effect Size, Design Effects, and Power Analysis"
+date: "March 22, 2024"
+author: "Mark Lai"
+institute: "University of Southern California"
+bibliography: references.yaml
+csl: apa.csl
+format:
+  revealjs:
+    embed-resources: true
+    slide-number: true
+    df-print: paged
+---
+
+## My Journey in Multilevel Modeling (MLM)
+
+$$
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\cov}{Cov}
+\DeclareMathOperator{\null}{N}
+\newcommand{\bv}[1]{\boldsymbol{\mathbf{#1}}}
+$$
+
+```{r}
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+::: {.r-stack}
+![](um_thesis.png){.fragment .absolute left=0 top=200}
+
+![](https://upload.wikimedia.org/wikipedia/commons/7/72/TAMU_Harrington1.JPG){.fragment .absolute left=200 top=200 width="600"}
+
+![](deff_jxe.png){.fragment .absolute left=300 top=200 width="800"}
+:::
+
+## The Journey Continues . . .
+
+::: {.callout}
+- Standardized effect size [@lai2014; @lai2016; @lai2021]
+- Cross-classified models [@lai2014; @lai2019]
+- Bootstrapping [@lai2021; @luo2021]
+- Survey sampling [@lai2018; @luo2021]
+- Measurement invariance [@hsiao2018]
+- Reliability [@lai2021a]
+- Heteroscedasticity [@zhang2024]
+:::
+
+. . . 
+
+Basically things we routinely do in regression, but not yet so with MLM
+
+## Background of This Talk
+
+::: {.incremental}
+- Power analysis
+    * Simulation for some multilevel/longitudinal model
+    * Every NIH cycle
+- Modify the sample sizes until the desired level of power
+    * Trial and error, not very efficient
+:::
+
+## Overview
+
+::: {.incremental}
+- The mixed model equation
+- Multicollinearity and variance partitioning (with Venn diagrams)
+- Standardized effect size
+- Design effect/variance inflation
+- Power analysis
+:::
+
+<!-- ---
+
+Applying concepts in regression to understand the multilevel equations
+
+- Effect size
+- Multicollineariity/Variance inflation -->
+
+# Mixed Model Equation {background-color="#595959"}
+
+## Multilevel Data
+
+```{r}
+set.seed(1054)
+demo_dat <- data.frame(
+    cid = rep(1:4, each = 4),
+    y = as.integer(rnorm(16, mean = 6, sd = 2)),
+    x1 = rep(c(0, 1, 0), c(4, 8, 4)),
+    x2 = sample(0:2, size = 16, replace = TRUE)
+)
+demo_dat
+```
+
+## Mixed Model Equations {.smaller}
+
+$$
+\bv y = \bv X \color{red}{\bv \gamma} + \bv Z \color{blue}{\bv u} + \bv e
+$$
+
+::: {.r-stack}
+
+::: {.fragment .fade-in-then-out}
+
+```{r}
+#| results: asis
+ytex <- paste0(demo_dat$y[1:8], collapse = " \\\\")
+xtex <- apply(cbind(1, demo_dat[1:8, c("x1", "x2")]),
+              MARGIN = 1, FUN = paste0, collapse = " & ") |>
+        paste0(collapse = " \\\\")
+gammatex <- paste0(" \\color{red}{{\\gamma_", 0:2, "}}", collapse = " \\\\")
+Z0 <- model.matrix(~ 0 + factor(demo_dat$cid[1:8]))
+Z1 <- Z0 * demo_dat$x2
+Z1[which(Z0 == 0)] <- " "
+Z0[which(Z0 == 0)] <- " "
+ztex <- apply(cbind(Z0, Z1), MARGIN = 1,
+              FUN = paste0, collapse = " & ") |>
+              paste0(collapse = " \\\\")
+utex <- outer(1:2, Y = 0:1, FUN = \(x, y) paste0("\\color{blue}{{u_{", y, x, "}}}")) |>
+    paste0(collapse = " \\\\")
+etex <- outer(1:5, Y = 1:2, FUN = \(x, y) paste0("e_{", y, x, "}")) |>
+    paste0(collapse = " \\\\")
+tex_lst <- list(y = ytex, x = xtex, gam = gammatex,
+                z = ztex, u = utex, e = etex)
+tex_lst <- lapply(tex_lst, FUN = \(tt) {
+    paste("\\begin{bmatrix}", tt, "\\end{bmatrix}",
+          sep = "\n")
+})
+cat("$$",
+    tex_lst$y,
+    "=",
+    tex_lst$x,
+    tex_lst$gam,
+    "+",
+    tex_lst$z,
+    tex_lst$u,
+    "+",
+    tex_lst$e,
+    "$$",
+    sep = "\n")
+```
+
+:::
+
+::: {.fragment .fade-in}
+
+```{r}
+#| results: asis
+make_col <- function(x, color) {
+    paste0(" \\color{", color, "}{{", x, "}}")
+}
+ytex <- paste0(c(
+    make_col(demo_dat$y[1:4], color = "orange"),
+    demo_dat$y[5:8]
+), collapse = " \\\\")
+xtex <- apply(cbind(1, demo_dat[1:4, c("x1", "x2")]),
+    MARGIN = 1, FUN = \(x) {
+        paste0(make_col(x, color = "orange"), collapse = " & ")
+    }
+) |>
+    c(
+        apply(cbind(1, demo_dat[5:8, c("x1", "x2")]),
+            MARGIN = 1, FUN = paste0, collapse = " & "
+        )
+    ) |>
+    paste0(collapse = " \\\\")
+ztex <- apply(cbind(Z0, Z1)[1:4, ],
+    MARGIN = 1,
+    FUN = \(x) {
+        paste0(make_col(x, color = "orange"), collapse = " & ")
+    }
+) |>
+    c(
+        apply(cbind(Z0, Z1)[5:8, ],
+            MARGIN = 1,
+            FUN = paste0, collapse = " & "
+        )
+    ) |>
+    paste0(collapse = " \\\\")
+utex <- outer(1:2, Y = 0:1, FUN = \(x, y) {
+    out <- paste0("u_{", y, x, "}")
+    ifelse(x == 1, yes = make_col(out, color = "orange"), no = out)
+}) |>
+    paste0(collapse = " \\\\")
+etex <- outer(1:5, Y = 1:2, FUN = \(x, y) {
+    out <- paste0("e_{", y, x, "}")
+    ifelse(y == 1, yes = make_col(out, color = "orange"), no = out)
+    }) |>
+    paste0(collapse = " \\\\")
+tex_lst <- list(
+    y = ytex, x = xtex, gam = gammatex,
+    z = ztex, u = utex, e = etex
+)
+tex_lst <- lapply(tex_lst, FUN = \(tt) {
+    paste("\\begin{bmatrix}", tt, "\\end{bmatrix}",
+        sep = "\n"
+    )
+})
+cat("$$",
+    tex_lst$y,
+    "=",
+    tex_lst$x,
+    tex_lst$gam,
+    "+",
+    tex_lst$z,
+    tex_lst$u,
+    "+",
+    tex_lst$e,
+    "$$",
+    sep = "\n"
+)
+```
+
+:::
+
+:::
+
+. . .
+
+For cluster $j$, $\bv y_j = \bv X_j \bv \gamma + \bv Z_j \bv u_j + \bv e_j$
+
+---
+
+## Mixed Model Equations (cont'd) {.smaller}
+
+$$
+\bv y = \bv X \color{red}{\bv \gamma} + \bv Z \color{blue}{\bv u} + \bv e
+$$
+
+::: {.incremental}
+- $\bv Z$ = $[\bv Z_0 \cdots \bv Z_{q - 1}]$, and each component is block-diagonal
+- $\bv e$ is a vector of error;^[or $V(\bv e) = \sigma^2 \bv R$ for autocorrelations/heteroscedasticity] $V(\bv e) = \sigma^2 \bv I$
+- $\bv u$: vector of length $q J$ of random effects; $V(\bv u_j) = \bv T = \sigma^2 \bv D \quad \forall j$\
+    $$
+    \bv D = \begin{bmatrix}
+      \tau_0^2 / \sigma^2 & & & \\
+      \tau_{01} / \sigma^2 & \tau_1^2 / \sigma^2 & & \\
+      \vdots & \cdots & \ddots & \\
+      \tau_{0 q -1} / \sigma^2 & \tau_{1 q -1} / \sigma^2 & \cdots & \tau^2_{q - 1} / \sigma^2 \\
+    \end{bmatrix}
+    $$
+- $\bv u$ and $\bv e$ are mutually independent, and both are indepedent of $\bv X$ and $\bv Z$
+:::
+
+## Total Variance of $\bv y$
+
+Conditional on $\bv X$
+
+$$
+V(\bv Z \bv u + \bv e) = \sigma^2 \bv V = \sigma^2 [\bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I],
+$$
+
+. . .
+
+Unconditional ($\bv X^c$ = grand-mean centered $\bv X$)
+
+$$
+\underbrace{\bv X^c \bv \gamma \bv \gamma^\top {\bv X^c}^\top}_{\text{fixed}} + \underbrace{\sigma^2 \bv Z (\bv D \otimes \bv I_J) \bv Z^\top}_{\text{random lv-2}} + \underbrace{\sigma^2 \bv I}_{\text{random lv-1}}.
+$$
+
+# Multicollinearity {background-color="#595959"}
+
+## Variance Partitioning
+
+In regression, we look at
+
+- ${\bv X^c}^\top {\bv X^c} / N$, covariance among columns of ${\bv X^c}$ (assume mean centered predictors)
+
+. . .
+
+If $X_1$ and $X_2$ are uncorrelated, ${\bv x_1^c}^\top \bv x_2^c = 0$, and variance accounted for by the two predictors are separate
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+![](venn_uncorr_x1x2.png){fig-alt="Venn Diagram of uncorrelated predictors" width="60%" fig-align="center"}
+
+:::
+
+::: {.column width="50%"}
+
+![](venn_corr_x1x2.png){fig-alt="Venn Diagram of correlated predictors" width="60%" fig-align="center"}
+
+:::
+
+::::
+
+---
+
+## Rearranging the MLM Equation {.smaller}
+
+::: {.r-stack}
+
+::: {.fragment .fade-in-then-out}
+
+```{r}
+#| results: asis
+cat("$$",
+    tex_lst$y,
+    "=",
+    tex_lst$x,
+    tex_lst$gam,
+    "+",
+    tex_lst$z,
+    tex_lst$u,
+    "+",
+    tex_lst$e,
+    "$$",
+    sep = "\n")
+```
+
+:::
+
+::: {.fragment .fade-in}
+
+```{r}
+#| results: asis
+xztex <- apply(cbind(1, demo_dat[, c("x1", "x2")], Z0, Z1)[1:4, ],
+    MARGIN = 1, FUN = \(x) {
+        paste0(make_col(x, color = "orange"), collapse = " & ")
+    }
+) |>
+    c(
+        apply(cbind(1, demo_dat[, c("x1", "x2")], Z0, Z1)[5:8, ],
+            MARGIN = 1, FUN = paste0, collapse = " & "
+        )
+    ) |>
+    paste0(collapse = " \\\\")
+gammautex <- paste(gammatex, utex, sep = " \\\\")
+tex_lst <- list(y = ytex, xz = xztex, gamu = gammautex,
+                e = etex)
+tex_lst <- lapply(tex_lst, FUN = \(tt) {
+    paste("\\begin{bmatrix}", tt, "\\end{bmatrix}",
+          sep = "\n")
+})
+cat("$$",
+    tex_lst$y,
+    "=",
+    tex_lst$xz,
+    tex_lst$gamu,
+    "+",
+    tex_lst$e,
+    "$$",
+    sep = "\n")
+```
+
+:::
+:::
+
+---
+
+In MLM, we also look at
+
+:::{.incremental}
+- $\bv Z^\top \bv Z$, cross-products among columns of $\bv Z$, and
+
+- ${\bv X^c}^\top \bv Z$, cross-products between columns of ${\bv X^c}$ and those of $\bv Z$
+:::
+
+---
+
+## Example 1: Random Intercepts Only
+
+. . .
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+- $\bv Z_0$ = $\diag(\bv 1_{n_1}, \ldots, \bv 1_{n_J})$ $\Rightarrow$ $\bv x_0^\top \bv Z_0 \neq \bv 0$
+
+```{r}
+#| include: false
+num_clus <- 2
+num_obs <- 3
+X0 <- matrix(1, nrow = num_clus * num_obs)
+Z0 <- diag(num_clus) %x% rep(1, num_obs)
+```
+
+```{r}
+#| echo: true
+Z0
+```
+
+:::
+
+::: {.column width="50%"}
+
+![](venn_z0.png){fig-alt="Venn Diagram (VD) with only random intercepts"}
+
+:::
+
+::::
+
+::: aside
+$X_0$ is the constant term (i.e., column of 1s)
+:::
+
+---
+
+- Residual maker matrix: $\bv M_{Z_0}$ = $\bv I - \bv Z_0 (\bv Z_0^\top \bv Z_0)^{-1} \bv Z_0^\top$
+    * $\bv M_{Z_0} \bv Z_0$ = $\bv 0$
+
+. . .
+
+```{r}
+#| echo: true
+(M_Z0 <- diag(nrow(Z0)) - Z0 %*% solve(crossprod(Z0), t(Z0))) |>
+    round(digits = 2)
+```
+
+## Example 2a: Level-2 Predictor
+
+```{r}
+(X1 <- rep(c(-1, 1), each = num_obs))
+```
+
+. . .
+
+- $\bv x_1$ = $[w_1 \bv 1^\top_{n_1}, \ldots, w_J \bv 1^\top_{n_J}]^\top$ $\Rightarrow$ $\bv x_1^\top \bv Z_0 \neq \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, Z0)
+```
+
+. . .
+
+- $\bv x_1^\top \bv M_{Z_0} = \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, M_Z0) |>
+    round(digits = 2)
+```
+
+---
+
+![](venn_x1z0_lv2.png){fig-alt="Venn Diagram (VD) with level-2 predictor. Predictor only accounts for level-2 variance, not level-1" fig-align="center"}
+
+> Level-2 predictor can only account for level-2 variance
+
+## Example 2b: Pure Level-1 Predictor
+
+```{r}
+(X1 <- c(-2, 0, 2, -3, 2, 1))
+```
+
+. . .
+
+- Cluster means of $X_1$ = 0 $\Rightarrow$ $\bv x_1^\top \bv Z_0 = \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, Z0)
+```
+
+. . .
+
+- $\bv x_1^\top \bv M_{Z_0} \neq \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, M_Z0)
+```
+
+---
+
+![](venn_x1z0_lv1.png){fig-alt="Venn Diagram (VD) with purely level-1 predictor. Predictor only accounts for level-1 variance, not level-2" fig-align="center"}
+
+> Pure level-1 predictor can only account for level-1 variance
+
+## Example 2c: General Level-1 Predictor
+
+```{r}
+(X1 <- c(-1, 1, 2, -3, 0, 1))
+```
+
+. . .
+
+- Cluster means of $\bv x_1$ $\neq$ 0 $\Rightarrow$ $\bv x_1^\top \bv Z_0 \neq \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, Z0)
+```
+
+. . .
+
+- $\bv x_1^\top \bv M_{Z_0} \neq \bv 0$
+
+```{r}
+#| echo: true
+crossprod(X1, M_Z0) |>
+    round(digits = 2)
+```
+
+---
+
+![](venn_corr_x1z0.png){fig-alt="Venn Diagram (VD) with general level-1 predictor. Predictor can account for both level-2 and level-1 variance" fig-align="center"}
+
+> Level-1 predictor can account for both level-2 and level-1 variance
+
+---
+
+## Example 3: Random slopes
+
+- Without cluster-mean centering, $\bv Z_1 = \diag(\bv x_{11}, \bv x_{12}, \ldots, \bv x_{1J})$
+
+```{r}
+(Z1 <- as.matrix(Matrix::bdiag(X1[1:3], X1[4:6])))
+```
+
+. . .
+
+- With unequal cluster means, $\bv Z_1^\top \bv Z_0$ $\neq$ $\bv 0$ and $\bv Z_1^\top \bv M_{Z_0}$ $\neq$ $\bv 0$
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: true
+crossprod(Z1, Z0)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: true
+t(M_Z0 %*% Z1) |> round(digits = 2)
+```
+
+:::
+
+::::
+
+---
+
+:::: {.columns}
+
+::: {.column width="70%"}
+
+::: {.incremental}
+- For general level-1 predictor
+    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to both the random intercept variance ($\tau_0^2$) and $\sigma^2$
+:::
+
+:::
+
+::: {.column width="30%"}
+
+![](venn_corr_z0z1.png){fig-alt="Venn Diagram (VD) with correlated random intercepts and slopes" fig-align="center"}
+
+:::
+
+::::
+
+. . .
+
+:::: {.columns}
+
+::: {.column width="70%"}
+
+::: {.incremental}
+- For purely level-1 predictor, $\bv Z_1^\top \bv Z_0$ = $\bv 0$
+    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to only $\sigma^2$
+:::
+
+:::
+
+::: {.column width="30%"}
+
+![](venn_uncorr_z0z1.png){fig-alt="Venn Diagram (VD) with uncorrelated random intercepts and slopes" fig-align="center"}
+
+:::
+
+::::
+
+## Revisiting @lai2015
+
+Using simulation, we found that, when clustering is ignored, SE of the following is underestimated 
+
+::: {.incremental}
+- Lv-2 predictor
+- Lv-1 predictor with lv-2 variance (i.e., unequal cluster means)
+- Lv-1 predictor with random slopes
+:::
+
+. . .
+
+> Because they all correlate with $\bv Z$!
+
+# Effect Size {background-color="#595959"}
+
+## Average Variance of Each Observation
+
+- Random slopes imply nonconstant variance across observations^[See @johnson2014]
+    * $V(x_{ij} u_j)$ depends on $x_{ij}$
+
+. . .
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: true
+#| results: hide
+sigma2 <- 0.5
+D_mat <- diag(c(1, 0.5))
+Z <- cbind(Z0, Z1)
+(Vy <- sigma2 * (Z %*% (D_mat %x%
+    diag(num_clus)) %*% t(Z) +
+    diag(num_obs * num_clus)))
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+Vy2 <- Vy
+Vy2[] <- as.character(sprintf("%.2f", Vy2))
+Vy2[4:6, 1:3] <- ""
+Vy2[1:3, 4:6] <- ""
+prmatrix(Vy2, quote = FALSE, right = TRUE)
+```
+
+:::
+
+::::
+
+## Average Variance of Each Observation (cont'd)
+
+$$
+\begin{aligned}
+  \Tr[V(\bv y)] / N & = \bv \gamma^\top {\bv X^c}^\top {\bv X^c} \bv \gamma / N \\
+  & \quad + \sigma^2 \Tr[\bv Z (\bv D \otimes \bv I_J) \bv Z^\top] / N + \sigma^2
+\end{aligned}
+$$
+
+```{r}
+#| echo: true
+mean(diag(Vy))  # just the random component
+```
+
+![](trace.png){fig-alt="trace of variance matrix of y" fig-align="center"}
+
+## Using Summary Statistics
+
+$$
+\Tr[V(\bv y)] / N = \bv \gamma^\top \bv \Sigma_X \bv \gamma + \sigma^2 [\Tr(\bv D \bv K_Z) + 1],
+$$
+
+. . .
+
+Let $\bv X^r$ be the design matrix of variables with random effects^[Usually $\bv X^r$ $\subset$ $\bv X$; $\bv X^r$ may not be grand-mean centered]
+
+. . .
+
+- $\bv \Sigma_X$ = ${\bv X^c}^\top {\bv X^c} / N$ (covariance matrix of $\bv X$)
+- $N \bv K_Z$ = ${\bv X^r}^\top {\bv X^r}$ (uncentered crossproduct matrix)
+    * $\bv K_Z = {\bar{\bv X}^r}^\top {\bar{\bv X}^r} + \bv \Sigma^r_X$
+
+::: aside
+cf. @rights2019; @rights2023
+:::
+
+## Intraclass Correlations
+
+Unconditional or Conditional on the fixed effects
+
+- i.e., proportion of variance at level 2 out of all variance unaccounted for by the fixed effects
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+$$
+\mathrm{ICC}_{D} = \frac{\Tr(\bv D \bv K_Z)}{\Tr(\bv D \bv K_Z) + 1},
+$$
+
+:::
+
+::: {.column width="50%"}
+
+![](venn_icc.png){fig-alt="Venn diagram of conditional ICC as the proportion of level-2 variance" width="60%" fig-align="center"}
+
+:::
+
+::::
+
+::: aside
+Can also be further partitioned by specific components of $\bv Z$ [e.g., random slopes, see @aguinis2015; @rights2019]
+:::
+
+## Multilevel $R^2$
+
+Proportion of variance by fixed effects [see @johnson2014; @rights2019]^[@rights2019 discussed more ways to partition $R^2$]
+
+$$
+R^2_\text{GLMM} = \frac{\bv \gamma^\top \bv \Sigma_X \bv \gamma}{\bv \gamma^\top \bv \Sigma_X \bv \gamma + \sigma^2 [\Tr(\bv D \bv K_Z) + 1]}.
+$$
+
+Also
+
+$$
+\sigma^2 [\Tr(\bv D \bv K_Z) + 1] = 1 - R^2_\text{GLMM}
+$$
+
+---
+
+::: {.callout-tip}
+
+## (Unconditional) ICC and $R^2$
+
+From a random-intercepts model without fixed-effect predictors,
+
+ICC = maximum $R^2$ for a level-2 predictor
+
+1 - ICC = maximum $R^2$ for a purely level-1 predictor
+
+:::
+
+::: {.callout-tip}
+
+## (Conditional) ICC and $R^2$
+
+From a conditional model with fixed-effect predictors,
+
+ICC = Proportion of variance accounted for by level-2 random effects
+
+$R^2$ = Proportion of variance accounted for by all fixed-effect predictors
+
+:::
+
+## {.smaller}
+
+Code Example
+
+```{r}
+library(lme4)
+data(Hsb82, package = "mlmRev")
+m1 <- lmer(mAch ~ ses + meanses + (ses | school), data = Hsb82)
+summary(m1, correlation = FALSE)
+```
+
+```{r}
+#| echo: true
+#| output-location: column
+# Variance by fixed effects
+sigmax <- cov(Hsb82[c("ses", "meanses")]) /
+    nrow(Hsb82) * (nrow(Hsb82) - 1)
+(vf <- crossprod(fixef(m1)[2:3],
+                 sigmax %*% fixef(m1)[2:3]))
+```
+
+```{r}
+#| echo: true
+#| output-location: column
+# Variance by Z
+sigmaz <- matrix(c(0, 0, 0, sigmax[1, 1]), nrow = 2)
+Kz <- sigmaz + tcrossprod(c(1, mean(Hsb82$ses)))
+tau_mat <- VarCorr(m1)[[1]]
+(vr <- sum(Kz * tau_mat))
+```
+
+---
+
+Code Example {cont'd}
+
+```{r}
+#| echo: true
+library(r2mlm)
+library(MuMIn)
+# R^2 using formula, r2mlm::r2mlm(), and MuMIn::r.squaredGLMM()
+list(formula = vf / (vf + vr + sigma(m1)^2),
+     r2mlm = r2mlm(m1),
+     MuMIn = MuMIn::r.squaredGLMM(m1))
+```
+
+---
+
+Confidence interval of $R^2$
+
+- Delta method
+- Bootstrapping (with `lme4::bootMer()` or R package *bootmlm*)^[see this blog post: <https://quantscience.rbind.io/posts/2022-05-12-confidence-intervals-for-multilevel-r-squared/>]
+- Bayesian estimation
+
+## Standardized Mean Difference
+
+SMD = Mean difference / $\mathit{SD}_p$^[$\mathit{SD}_p$ = pooled within-arm standard deviation]
+
+. . .
+
+For cluster-randomized trials
+
+$$
+Y_{ij} = T_j \gamma + Z_{0j} u_{0j} + e_{ij}, \quad V(u_{0j}) = \tau_0^2
+$$
+
+$T_j$ = 0 (control) and 1 (treatment)
+
+. . .
+
+$$
+\delta = \frac{\gamma}{\sqrt{\sigma^2[\Tr(\bv D \bv K_Z) + 1]}} = \frac{\gamma}{\sqrt{\tau^2_0 + \sigma^2}}
+$$
+
+::: aside
+Sample estimator $d$: replace $\gamma$, $\tau^2_0$, and $\sigma^2$ with sample estimates
+:::
+
+---
+
+With covariates $\bv X_2$, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + Z_{0j} u_{0j} + e_{ij}$
+
+. . .
+
+- $\vec{T}^\top \bv X_2 = \bv 0$ and no interactions
+
+$$
+\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \tau^2_0 + \sigma^2}}
+$$
+
+---
+
+With random slopes, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + \bv z^\top_{ij} \bv u_j + e_{ij}$
+
+. . .
+
+- and also $\vec{T}^\top \bv Z = \bv 0$
+
+$$
+\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \sigma^2[\Tr(\bv D \bv K_Z) + 1]}}
+$$
+
+---
+
+##
+
+Code example (data)
+
+```{r}
+set.seed(1234)
+num_clus <- 30
+num_obs <- 5
+tau0sq <- 0.5
+tau1sq <- 0.2
+sigma2 <- 1
+clus_id <- rep(1:num_clus, each = num_obs)
+gamma1 <- 0.4
+gamma2 <- 0.2
+Z0 <- diag(num_clus) %x% rep(1, num_obs)
+treat <- rep(c(0, 1), each = num_clus / 2)
+x2 <- rbinom(num_obs * num_clus, size = 1, prob = 0.5)
+Z1 <- x2 * Z0
+# zu <- matrix(rnorm(num_clus * 2), nrow = num_clus)
+# W <- cbind(1, treat, crossprod(Z0, x2))
+# aW <- diag(nrow(W)) - W %*% solve(crossprod(W), t(W))
+# zu2 <- aW %*% zu
+# u <- zu2 %*% solve(chol(crossprod(zu2) / num_clus)) %*% diag(sqrt(c(tau0sq, tau1sq)))
+# Xu <- cbind(1, treat[clus_id], x2, u[clus_id, ])
+# aX <- diag(nrow(Xu)) - Xu %*% solve(crossprod(Xu), t(Xu))
+# ze <- rnorm(num_clus * num_obs)
+# ze2 <- aX %*% ze
+# e <- ze2 / sqrt(mean(ze2^2))
+u <- MASS::mvrnorm(num_clus, mu = rep(0, 2),
+                   Sigma = diag(c(tau0sq, tau1sq)))
+e <- rnorm(num_clus * num_obs)
+sim_data <- data.frame(
+    y = 3 + gamma1 * treat + gamma2 * x2 +
+        Z0 %*% u[, 1] + Z1 %*% u[, 2] + e,
+    treat = treat,
+    x2 = x2,
+    clus_id = clus_id
+)
+sim_data
+```
+
+---
+
+Code example (cont'd)
+
+```{r}
+#| echo: true
+library(lme4)
+# Fit MLM
+m1 <- lmer(y ~ treat + x2 + (x2 | clus_id), data = sim_data)
+# Variance by x2
+Sigma_x <- with(sim_data, { x2c <- x2 - mean(x2); mean(x2c^2) })
+va_x2 <- Sigma_x * fixef(m1)[["x2"]]^2
+# Variance by random intercepts and random slopes
+# Using parameterization in lme4
+Kz <- crossprod(cbind(1, sim_data$x2)) / nrow(sim_data)
+va_z <- sum(VarCorr(m1)$clus_id * Kz)  # Tr(Tau, Kz)
+# Show all components
+c(gamma_1 = fixef(m1)[["treat"]], va_x2 = va_x2,
+  va_z = va_z, va_e = sigma(m1)^2)
+# Standardized effect size
+fixef(m1)[["treat"]] / sqrt(va_x2 + va_z + sigma(m1)^2)
+```
+
+```{r}
+#| eval: false
+with(sim_data, cov(cbind(treat - 0.5, x2 - mean(x2))))
+```
+
+---
+
+## Additional Notes on SMD {.smaller}
+
+::: {.incremental}
+- *SE* and CI: Delta method, bootstrap, Bayesian [also approximate variance as in @hedges2009]
+- Using unadjusted (marginal) mean difference when $\vec{T}^\top \bv X_2 \neq \bv 0$
+    * Unadjusted mean difference:  
+    $E(Y | T = 1, \bv u)$ - $E(Y | T = 1, \bv u)$ = $\gamma_1 + \Sigma_{TT}^{-1} \bv \Sigma_{T X_2} \bv \gamma_2$^[$\Sigma_{TT} = {T^c}^\top {T^c}$, $\bv \Sigma_{T X_2} = {T^c}^\top \bv X_2^c$]
+    * Unadjusted within-arm variance by fixed effects:  
+    $V(\hat Y | T, \bv u) = \bv \gamma^\top \bv \Sigma_X \bv \gamma - \gamma_1^2 \Sigma_{TT} - 2 \gamma_1 \bv \Sigma_{T X_2} \bv \gamma_2^\top - \Sigma^{-1}_{TT} \bv \gamma_2^\top \bv \Sigma_{X_2 T} \bv \Sigma_{T X_2}$
+    * More complicated when $T$ also correlates with $\bv Z$
+:::
+
+## Additional Notes on SMD (cont'd)
+
+::: {.incremental}
+- Choice of denominator
+    * Square root of total variance should be default^[as recommended in the [What Works Clearinghouse handbook](https://ies.ed.gov/ncee/WWC/Docs/referenceresources/Final_WWC-HandbookVer5_0-0-508.pdf)]
+    * Longitudinal: between-person variance
+        * i.e., variance at time 0 (or time $t$?)
+    * Multisite trials: Exclude treatment effect heterogeneity (i.e., random slope of $T$)?
+        * i.e., total variance without the intervention
+:::
+
+## Standardized Coefficients
+
+$$
+\gamma^s = \gamma \frac{\mathit{SD}_x}{\sqrt{\Tr[V(\bv y)] / N}}
+$$
+
+. . .
+
+```{r}
+data(Hsb82, package = "mlmRev")
+m1 <- lmer(mAch ~ ses + meanses + (ses | school), data = Hsb82)
+summary(m1)
+```
+
+---
+
+For cluster means and cluster-mean centered variables, it is still natural to use the total SD
+
+```{r}
+#| include: false
+sigmax <- crossprod(cbind(Hsb82$ses, Hsb82$meanses)) / 7185
+sigmax_bmat <- round(sigmax, 2) |>
+    apply(MARGIN = 2, FUN = paste0, collapse = " & ") |>
+    paste0(collapse = " \\\\")
+Kz <- crossprod(cbind(1, Hsb82$ses)) / 7185
+Kz_bmat <- round(Kz, 2) |>
+    apply(MARGIN = 2, FUN = paste0, collapse = " & ") |>
+    paste0(collapse = " \\\\")
+tau_mat <- VarCorr(m1)[[1]]
+tau_bmat <- round(tau_mat, 2) |>
+    apply(MARGIN = 2, FUN = paste0, collapse = " & ") |>
+    paste0(collapse = " \\\\")
+fe <- fixef(m1)[2:3] %*% sigmax %*% fixef(m1)[2:3]
+```
+
+::: {.incremental}
+- $\mathit{SD}_\text{SES}$ = `r round(sd(Hsb82$ses), 2)`
+- $\bv \Sigma_X$ = $\begin{bmatrix}
+    `r sigmax_bmat`
+    \end{bmatrix}$
+- $\bv K_Z = \begin{bmatrix} 
+    `r Kz_bmat`
+    \end{bmatrix}$, $\sigma^2 \bv D$ = $\begin{bmatrix}
+    `r tau_bmat`
+    \end{bmatrix}$
+- $\Tr[V(\bv y)] / N$ = $\bv \gamma^\top \bv \Sigma_X \bv \gamma$ + $\sigma^2 [\Tr(\bv D \bv K_Z) + 1]$ = `r round(fe, 2)` + `r round(sum(Kz * tau_mat), 2)` + `r round(sigma(m1)^2, 2)` = `r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`
+- $\gamma^s_\text{ses}$ = `r round(fixef(m1)[2] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
+- $\gamma^s_\text{meanses}$ = `r round(fixef(m1)[3] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
+:::
+
+## $f$ and $f^2$ Effect Size
+
+$$
+f^2_\text{GLMM} = \frac{R_\text{GLMM}^2}{1 - R_\text{GLMM}^2}
+$$
+
+- For two-group designs, $2f$ = $d$
+
+# Design Effect {background-color="#595959"}
+
+## Design Effect/Variance Inflation
+
+Design effect: Expected impact of design on sampling variance of an estimator^[https://en.wikipedia.org/wiki/Design_effect]
+
+. . .
+
+::: {.callout}
+
+For the sample mean $(\hat \mu)$:
+
+- Simple random sample: $V_\text{SRS}(\hat \mu_\text{SRS})$ = $\tilde \sigma^2 / N$
+    * *Assuming constant total variance*: $\tilde \sigma^2 = \tau_0^2 + \sigma^2$
+- With clustering:^[$\gamma_0$ is the grand mean] $V_\text{MLM}(\hat \gamma_0)$ = $\tau_0^2 / J + \sigma^2 / N$
+
+$$
+\mathrm{Deff}(\hat \mu) = \frac{V_\text{SRS}(\hat \gamma_0)}{V_\text{MLM}(\hat \mu_\text{SRS})} = \color{red}{1 + (n - 1) \textrm{ICC}}
+$$
+
+:::
+
+---
+
+::: {.callout-important}
+
+## $\mathrm{Deff}(\hat \mu)$ Does Not Inform About Random Slopes
+
+- Even when $\mathrm{Deff}(\hat \mu)$ is close to 1, random slope variance $\tau^2_1$ can still be large
+    * Random slopes can be independent from random intercepts
+:::
+
+. . .
+
+```{r}
+#| include: false
+set.seed(1253)
+library(Matrix)
+library(lme4)
+
+# Design parameters
+num_clus <- 20
+num_obs <- 5
+gamma <- c(1, .2)
+D_mat <- matrix(c(0.1, 0, 0, 0.25), nrow = 2)
+clus_id <- rep(1:num_clus, each = num_obs)
+sigma2 <- 1
+x <- rnorm(num_clus * num_obs)
+x <- ave(x, clus_id, FUN = \(xj) (xj - mean(xj)) / sd(xj))
+X <- cbind(1, x)
+Z <- Matrix::bdiag(rep(list(matrix(1, nrow = num_obs, ncol = 2)), num_clus)) *
+    X[, rep(1:2, num_clus)]
+
+fixed <- X %*% gamma
+u <- MASS::mvrnorm(num_clus, mu = rep(0, 2), Sigma = D_mat * sigma2)
+y <- fixed + Z %*% c(t(u)) + rnorm(num_clus * num_obs, sd = sqrt(sigma2))
+dat <- data.frame(y = as.numeric(y), x = x, clus_id = clus_id)
+```
+
+```{r}
+#| echo: true
+# Without including random slopes, it seems ICC = 0, Deff = 0
+m0 <- lmer(y ~ (1 | clus_id), data = dat)
+VarCorr(m0)
+```
+
+```{r}
+#| echo: true
+# But the random slope variance can be quite large
+m1 <- lmer(y ~ x + (x | clus_id), data = dat)
+VarCorr(m1)
+```
+
+## Deff for $\hat \gamma$
+
+$$
+\hat{\bv \gamma} = (\bv X^\top \bv V^{-1} \bv X)^{-1} \bv X^\top \bv V^{-1} \bv y
+$$
+
+$$
+\begin{aligned}
+V_\text{MLM}(\hat{\bv \gamma}^\text{GLS}) & = \sigma^2 (\bv X^\top \bv V^{-1} \bv X)^{-1} \\
+V_\text{SRS}(\hat{\bv \gamma}^\text{OLS}) & = \tilde \sigma^2 (\bv X^\top \bv X)^{-1}
+\end{aligned}
+$$
+
+where $\tilde \sigma^2 = \sigma^2 [\Tr(\bv D \bv K_Z) + 1]$
+
+::: aside
+$\bv V = \bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I$
+:::
+
+---
+
+## {.smaller}
+
+::: {.callout-note}
+
+## Unpacking $V(\hat{\bv \gamma}^\text{GLS})$
+
+$$
+\begin{aligned}
+  \sigma^2 ({\bv X}^\top \bv V^{-1} {\bv X})^{-1} & = 
+  \sigma^2 \{{\bv X}^\top [\bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I]^{-1} {\bv X}\}^{-1} \\
+  & = \sigma^2 \{{\bv X}^\top [\bv I - \bv Z (\bv D \otimes \bv I_J^{-1} + \bv Z^\top \bv Z) \bv Z^\top] {\bv X}\}^{-1} \\
+  & = \sigma^2 \{{\bv X}^\top {\bv X} - {\bv X}^\top \bv Z (\bv D \otimes \bv I_J^{-1} + \bv Z^\top \bv Z) \bv Z^\top {\bv X}\}^{-1} \\
+  & = \sigma^2 \{[({\bv X}^\top {\bv X})^{-1} + ({\bv X}^\top {\bv X})^{-1} {\bv X}^\top \bv Z (\bv D \otimes \bv I_J) \bv Z^\top {\bv X} ({\bv X}^\top {\bv X})^{-1} ]^{-1} \}^{-1} \\
+  & = \sigma^2 [({\bv X}^\top {\bv X})^{-1} + ({\bv X}^\top {\bv X})^{-1} {\bv X}^\top \bv Z (\bv D \otimes \bv I_J) \bv Z^\top {\bv X} ({\bv X}^\top {\bv X})^{-1} ]
+\end{aligned}
+$$
+
+We can substitute $\bv X$ with $\bv X^c$. As $\bv Z$ is block diagonal, ${\bv X^c}^\top \bv Z$ = $[{\bv X^c}^\top_1 \bv Z_1 | {\bv X^c}^\top_2 \bv Z_2 | \cdots | {\bv X^c}^\top_J \bv Z_J]$, and
+
+$$
+N \bv G = {\bv X^c}^\top \bv Z (\bv D \otimes \bv I_J) \bv Z^\top {\bv X^c} = \sum_{j = 1}^J {\bv X^c}^\top_j \bv Z_j \bv D \bv Z^\top_j {\bv X^c}_j
+$$
+
+is the cross-product matrix of ${\bv X^c}^\top \bv Z \bv u$, and $\bv G_{kl}$ seems equal to
+
+$$
+\begin{cases}
+  \tilde n N \bv \Sigma_{X_k Z} \bv D \bv \Sigma^\top_{X_l Z} & \text{when both }X_l \text{ and } X_k \text{ are purely level-1} \\
+  \tilde n N [\bv \Sigma_{X_k Z} \bv D \bv \Sigma^\top_{X_l Z} + \bv K_{X_k Z} \bv D \bv K^\top_{X_l Z}] & \text{otherwise}
+\end{cases}
+$$
+
+<!-- Let $n_j \bv K_{XZ}$ be the limiting matrix of ${\bv X^c}^\top_j \bv Z_j$, then -->
+
+<!-- $$
+\begin{aligned}
+\sigma^2 ({\bv X^c}^\top \bv V^{-1} {\bv X^c})^{-1} & = \sigma^2 [({\bv X^c}^\top {\bv X^c})^{-1} + \left(\sum_j n_j^2\right) ({\bv X^c}^\top {\bv X^c})^{-1} \bv \Sigma_{XZ} \bv D \bv \Sigma_{XZ}^\top ({\bv X^c}^\top {\bv X^c})^{-1}] \\
+& = \sigma^2 ({\bv X^c}^\top {\bv X^c})^{-1} [\bv I + \tilde n \bv \Sigma_{XZ} \bv D \bv \Sigma_{XZ}^\top \bv \Sigma_X^{-1}],
+\end{aligned} $$ -->
+
+where $\tilde n = \sum_{j = 1}^J n_j^2 / N$ (reduced to $n$ if cluster sizes are equal across clusters). <!-- and $\bv \Sigma_{XZ} = {{\bv X^c}^c}^\top \bv Z$ -->
+So
+
+$$
+\sigma^2 ({\bv X^c}^\top \bv V^{-1} {\bv X^c})^- = \sigma^2[\bv \Sigma^{-1}_X + \tilde n \bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X],
+$$
+
+where $\bv G$ = $(\bv \Sigma_{X Z} \bv D \bv \Sigma^\top_{X Z} + \bv F \bv K_{X Z} \bv D \bv K^\top_{X Z} \bv F)$, $\bv F$ is a diagonal filtering matrix in the form $\diag[f_0, f_1, \ldots, f_{p - 1}]$, where $f_k$ = 1 if $X_k$ has a level-2 component and 0 otherwise.
+
+:::
+
+---
+
+The OLS standard error and the MLM standard error have different rates of converagence to 0
+
+. . .
+
+For coefficient $\gamma_k$
+
+$$
+\begin{aligned}
+\mathrm{Deff}(\hat \gamma_k) & = \frac{{\bv \Sigma^{-1}_{X}}_{kk} + \tilde n \left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk} \Tr(\bv D \bv K_Z) + 1} \\
+& = (1 - \textrm{ICC}_D) + (1 - \textrm{ICC}_D) \tilde n \frac{\left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk}}
+\end{aligned}
+$$
+
+::: {.incremental}
+- Generally speaking, deff is larger with a larger cluster size, $n$
+- Deff is fixed for constant $n$ (as in $\textrm{Deff}[\hat \mu]$)
+:::
+
+<!-- Effective sample size: $N_\text{eff} = \frac{N}{\text{Deff}}$
+
+> If a sample size of $N_0$ is needed to detect $\hat \gamma$ with power $\beta$ in SRS, a sample size of approximately $N_0 \mathrm{Deff}(\hat \gamma)$ is needed in MLM for the same level of power -->
+
+---
+
+##
+
+Example: Growth curve modeling with Tx $\times$ slope interaction
+
+. . .
+
+$$
+\bv y_i =
+\begin{bmatrix}
+  1 & T_i & 0 & 0 \\
+  1 & T_i & 1 & T_i \\
+  1 & T_i & 2 & 2 T_i \\
+  1 & T_i & 3 & 3 T_i \\
+  1 & T_i & 4 & 4 T_i \\
+\end{bmatrix}
+\begin{bmatrix}
+  \gamma_0 \\
+  \gamma_1 \\
+  \gamma_2 \\
+  \gamma_3
+\end{bmatrix} +
+\begin{bmatrix}
+  1 & 0 \\
+  1 & 1 \\
+  1 & 2 \\
+  1 & 3 \\
+  1 & 4 \\
+\end{bmatrix}
+\begin{bmatrix}
+  u_0 \\
+  u_1 \\
+\end{bmatrix} +
+\begin{bmatrix}
+  e_{i1} \\
+  e_{i2} \\
+  e_{i3} \\
+  e_{i4} \\
+  e_{i5} \\
+\end{bmatrix}
+$$
+
+$$
+\bv \gamma = [1, 0, -0.1, -0.3]^\top,
+\bv D = \begin{bmatrix}
+  0.5 &  \\
+  0.2 & 0.1
+\end{bmatrix},
+\sigma^2 = 1.5
+$$
+
+. . .
+
+```{r}
+library(Matrix)
+library(lme4)
+# Design parameters
+num_clus <- 110
+num_obs <- 5
+gamma <- c(1, 0, -0.1, -0.3)  # int, tx, time, tx x time
+sigma2 <- 1.5
+D_mat <- matrix(c(0.5, 0.2, 0.2, 0.1), nrow = 2)
+clus_id <- rep(1:num_clus, each = num_obs)
+X <- cbind(1, rep(0:1, each = num_obs * num_clus / 2), rep(0:(num_obs - 1), num_clus))
+X <- cbind(X, X[, 2] * X[, 3])
+Kx <- crossprod(X) / num_clus / num_obs
+Xc <- scale(X, scale = FALSE)
+sigmax <- crossprod(Xc) / num_clus / num_obs
+Z <- Matrix::bdiag(rep(list(matrix(1, nrow = num_obs, ncol = 2)), num_clus)) *
+    X[, rep(c(1, 3), num_clus)]
+Kz <- Kx[c(1, 3), c(1, 3)]
+icc <- sum(D_mat * Kz) / (sum(D_mat * Kz) + 1) # ICC
+# Population effect size
+fe <- crossprod(gamma, sigmax %*% gamma)
+re <- (sum(D_mat * Kz) + 1) * sigma2
+r2 <- fe / (fe + re)
+# Print numbers
+c(icc = icc, r2 = r2)
+```
+
+---
+
+Example cont'd
+
+```{r}
+#| echo: true
+# Design effect
+sigmaxz <- sigmax[, c(1, 3)]
+Kxz <- Kx[, c(1, 3)]
+F_mat <- diag(c(0, 1, 0, 1))  # filtering
+G_mat <- (sigmaxz %*% D_mat %*% t(sigmaxz)) +
+    F_mat %*% Kxz %*% D_mat %*% t(Kxz) %*% F_mat
+sigmax_inv <- MASS::ginv(sigmax)
+(1 - icc) * (1 + num_obs * diag(sigmax_inv %*% G_mat %*% sigmax_inv) / 
+    diag(sigmax_inv))
+```
+
+```{r}
+# Simulate data
+set.seed(2037)
+fixed <- X %*% gamma
+u <- MASS::mvrnorm(num_clus, mu = rep(0, 2), Sigma = D_mat * sigma2)
+y <- fixed + Z %*% c(t(u)) + rnorm(num_clus * num_obs, sd = sqrt(sigma2))
+dat <- data.frame(cbind(as.numeric(y), X[, -c(1, 4)], clus_id))
+names(dat) <- c("y", "treat", "time", "pid")
+```
+
+```{r}
+#| echo: true
+m1 <- lmer(y ~ treat * time + (time | clus_id), data = dat)
+m0 <- lm(y ~ treat * time, data = dat)
+# Empirical variance ratio
+diag(vcov(m1)) / diag(vcov(m0))
+```
+
+# Power Analysis {background-color="#595959"}
+
+## Power Analysis
+
+:::: {.columns}
+
+::: {.column width="55%"}
+
+For $H_0$: $\gamma_k = 0$
+
+- Wald statistic: $z = \hat \gamma_k / \sqrt{\hat{V}(\hat \gamma_k)}$ 
+    * In large sample, $z \sim N(z_1, 1)$, $z_1$ = $\gamma_k / \sqrt{V(\hat \gamma_k)}$
+- With significance level $\alpha$, power is approximately $\Phi(z_{1 - \alpha / 2} - z_1) + \Phi(z_{\alpha / 2} - z_1)$
+
+:::
+
+::: {.column width="45%"}
+
+```{r}
+#| fig-width: 2.5
+#| fig-height: 2.5
+#| out-width: 100%
+ggplot(data.frame(z = c(-3, 6)), aes(x = z)) +
+    stat_function(fun = dnorm, linewidth = 1, aes(col = "H0")) +
+    stat_function(fun = dnorm, 
+                  args = list(mean = 1.5), linewidth = 1, aes(col = "H1")) +
+    geom_area(stat = "function",
+              fun = \(x) dnorm(x, mean = 1.5),
+              fill = "blue",
+              xlim = c(-3, qnorm(.025)),
+              alpha = .3) +
+    geom_area(stat = "function",
+              fun = \(x) dnorm(x, mean = 1.5),
+              fill = "blue",
+              xlim = c(qnorm(.975), 6),
+              alpha = .3) +
+    theme(legend.position = "top") +
+    labs(col = NULL)
+```
+
+:::
+
+::::
+
+---
+
+- Random slope 
+    * Line: analytic formula; Points: 1,000 simulation samples
+
+```{r}
+set.seed(1502)
+# Simulation-based power and effect size
+nsim <- 500
+nclus_vec <- c(50, 75, 100, 115)
+```
+
+```{r}
+#| eval: false
+# Est, SE (MLM), SE (OLS), LRT, F test
+out <- rep(list(matrix(NA, nrow = 7, ncol = nsim)), length(nclus_vec))
+
+for (l in seq_along(nclus_vec)) {
+    num_clus <- nclus_vec[l]
+    clus_id <- rep(1:num_clus, each = num_obs)
+    X <- cbind(1, rep(0:1, each = num_obs * num_clus / 2), rep(0:(num_obs - 1), num_clus))
+    X <- cbind(X, X[, 2] * X[, 3])
+    Kx <- crossprod(X) / num_clus / num_obs
+    Xc <- scale(X, scale = FALSE)
+    sigmax <- crossprod(Xc) / num_clus / num_obs
+    Z <- Matrix::bdiag(rep(list(matrix(1, nrow = num_obs, ncol = 2)), num_clus)) *
+        X[, rep(c(1, 3), num_clus)]
+    fixed <- X %*% gamma
+    for (r in seq_len(nsim)) {
+        u <- MASS::mvrnorm(num_clus, mu = rep(0, 2), Sigma = D_mat * sigma2)
+        y <- fixed + Z %*% c(t(u)) + rnorm(num_clus * num_obs, sd = sqrt(sigma2))
+        dat <- data.frame(cbind(as.numeric(y), X[, -c(1, 4)], clus_id))
+        names(dat) <- c("y", "treat", "time", "pid")
+
+        m0 <- lmer(y ~ treat + time + (time | clus_id), data = dat)
+        m1 <- lmerTest::lmer(y ~ treat * time + (time | clus_id), data = dat)
+
+        m1ols <- lm(y ~ treat * time, data = dat)
+
+        out[[l]][, r] <- c(
+            m1@beta[4], sqrt(vcov(m1)[4, 4]), sqrt(vcov(m1ols)[4, 4]),
+            anova(m1, m0)[2, "Pr(>Chisq)"], anova(m1)[3, "Pr(>F)"],
+            r.squaredGLMM(m1)[1], r.squaredGLMM(m0)[1]
+        )
+    }
+}
+saveRDS(out, "simresults-growth.rds")
+```
+
+```{r}
+#| fig-width: 5
+#| fig-asp: 0.618
+#| fig-align: center
+#| out-width: 90%
+out <- readRDS("simresults-growth.rds")
+# Power
+pow <- lapply(out, FUN = \(x) {
+    c(
+        wald = mean(pnorm(abs(x[1, ] / x[2, ])) > .975),
+        lrt = mean(x[4, ] < .05),
+        ftest = mean(x[5, ] < .05),
+        mean_r2 = mean(x[6, ]),
+        mean_d_r2 = mean(x[7, ])
+    )
+}) |>
+    do.call(what = rbind) |>
+    cbind(J = nclus_vec)
+# Theoretical power
+th_pow <- vapply(nclus_vec, FUN = \(nclus) {
+    vg4 <- sigma2 * (sigmax_inv / num_obs + sigmax_inv %*% G_mat %*%
+        sigmax_inv)[4, 4] / nclus
+    pnorm(qnorm(.975), mean = gamma[4] / sqrt(vg4), lower.tail = FALSE) +
+        pnorm(qnorm(.025), mean = gamma[4] / sqrt(vg4))
+}, 
+    FUN.VALUE = numeric(1))
+# ggplot
+ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
+    geom_point() +
+    geom_point(aes(x = J + 1, y = lrt, color = "lrt")) +
+    geom_point(aes(x = J - 1, y = ftest, color = "ftest")) +
+    geom_errorbar(
+        aes(ymin = wald - sqrt(wald * (1 - wald) / nsim),
+            ymax = wald + sqrt(wald * (1 - wald) / nsim)),
+        width = .5) +
+    geom_errorbar(
+        aes(x = J + 1, ymin = lrt - sqrt(lrt * (1 - lrt) / nsim),
+            ymax = lrt + sqrt(lrt * (1 - lrt) / nsim)),
+        width = .5) +
+    geom_errorbar(
+        aes(x = J - 1, ymin = ftest - sqrt(ftest * (1 - ftest) / nsim),
+            ymax = ftest + sqrt(ftest * (1 - ftest) / nsim)),
+        width = .5) +
+    geom_line(aes(y = th_pow)) +
+    theme(legend.position = "top") +
+    labs(y = "Power", col = "Test")
+```
+
+## Wait, This Is Not New . . .
+
+- @snijders1993 also had closed-form expressions for $V(\hat \gamma^\text{GLS})$
+    * Implemented in the PINT software^[https://www.stats.ox.ac.uk/~snijders/multilevel.htm#progPINT]
+- @murayama2022: summary-statistics-based power analysis^[Shiny app: <https://koumurayama.shinyapps.io/summary_statistics_based_power/>]
+    * Primarily useful when prior studies reported relevant $t$ statistic
+
+---
+
+### What can still be done?
+
+::: {.incremental}
+- Implementing formula-based approach in other software
+- Express $V(\hat \gamma^\text{GLS})$ in terms of effect sizes
+- Extend to models with other error covariance structure and more levels
+:::
+
+---
+
+## Handling Nuisance Parameters in Power Analysis
+
+::: {.incremental}
+- There are many nuisance parameters (e.g., ICC, correlation among predictors) that affect power
+    * Usually we just choose some convenient values
+- A more disciplined approach: incorporate our uncertainty of those parameters as Bayesian priors
+    * See the [HCB shiny application](https://winnie-wy-tse.shinyapps.io/hcb_shiny/) by Winnie Tse
+:::
+
+---
+
+::: {.r-stack}
+![](hcb_shiny1.png)
+
+![](hcb_shiny2.png){.fragment}
+:::
+
+::: aside
+Shiny app: <https://winnie-wy-tse.shinyapps.io/hcb_shiny/>\
+R package *hcbr*: <https://github.com/winniewytse/hcbr>
+:::
+
+## Summary
+
+::: {.incremental}
+- Multicollinearity can happen between random-effect predictors, and between random- and fixed-effect predictors
+- With random coefficients, one can do variance partitioning using the average variance of an observation
+    * $\textrm{ICC}_D$ quantifies the proportion of variance due to random effects
+    * $R^2$ quantifies the proportion of variance due to fixed effects
+- Standardized coefficients and standardized effect size can be defined
+:::
+
+## Summary (cont'd)
+
+::: {.incremental}
+- Design effect quantifies variance inflation of an estimator due to cluster sampling
+    * Can be applied to fixed-effect estimators
+- Closed-form expression for power can be obtained from summary statistics
+:::
+
+## More Questions
+
+::: {.incremental}
+- What is the bias of sample $R^2$ estimator?
+    * Can we compute adjusted $R^2$?
+- How can we obtain $\Delta R^2$ and CI?
+- How does omitting $X$ affect estimates of $\gamma$ and $\tau$?
+- How does omitting $Z$ affect estimates of $\gamma$ and $\tau$?
+- How do we generalized beyond two-level models?
+    * E.g., Crossed random effects [e.g., @lai2019]
+:::
+
+# Thank You!
+
+If you have any suggestions or feedback, please email me at <hokchiol@usc.edu>
+
+## References
+
+::: {#refs}
+:::
