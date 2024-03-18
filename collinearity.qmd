@@ -1,0 +1,157 @@
+---
+title: "Collinearity in Mixed-Effect Models"
+format: gfm
+---
+
+HSB Example
+
+```{r}
+library(lme4)
+data(Hsb82, package = "mlmRev")
+m1 <- lmer(mAch ~ sector * ses + meanses + (ses | school), data = Hsb82)
+# Fixed-effect design matrix
+X <- model.matrix(m1)
+# Centering matrix
+num_obs <- nrow(X)
+C <- diag(num_obs) - matrix(1 / num_obs, nrow = num_obs, ncol = num_obs)
+Xc <- C %*% X
+# Random-effect design matrix
+Z <- model.matrix(m1, type = "random")
+Z0 <- Z[, 1:(ncol(Z) / 2) * 2 - 1]
+Z1 <- Z[, 1:(ncol(Z) / 2) * 2]
+```
+
+## Collinearity Among columns of $\mathbf X$
+
+```{r}
+round(crossprod(Xc) / num_obs, digits = 3)
+```
+
+## Collinearity Among $\mathbf Z$
+
+```{r}
+ns <- colSums(Z0) # cluster sizes
+round(diag(crossprod(Z0, Z1)) / ns, digits = 3)
+```
+
+Clearly $\mathbf Z_0$ and $\mathbf Z_1$ are correlated.
+
+## Collinearity Between $\mathbf X$ and $\mathbf Z_0$
+
+```{r}
+crossprod(Xc, Z0) |>
+    sweep(MARGIN = 2, STATS = ns, FUN = "/") |>
+    round(digits = 3)
+```
+
+## Collinearity Between $\mathbf X$ and $\mathbf Z_1$
+
+```{r}
+crossprod(Xc, Z1) |>
+    sweep(MARGIN = 2, STATS = ns, FUN = "/") |>
+    round(digits = 3)
+```
+
+# Simulated Data on Collinearity Between $\mathbf Z_0$ and $\mathbf Z_1$
+
+This simulation shows an example how variances of random slopes are redistributed based on the choice of centering.
+
+```{r}
+#| cache: true
+set.seed(2132)
+nsim <- 100
+out <- rep(list(matrix(NA, nrow = 7, ncol = nsim,
+    dimnames = list(c("fv_m1", "tau0sq_m1", "tau1sq_m1", "sigmasq_m1", 
+                      "fv_m0", "tau0sq_m0", "sigmasq_m0"), NULL))), 3) |>
+    setNames(c("uncentered", "grandmeancentered", "clustermeancentered"))
+
+# Design parameters
+num_clus <- 25
+num_obs <- 20
+vb_x <- 1.5
+gamma <- c(1, .2)
+D_mat <- matrix(c(1, 0, 0, 0.4), nrow = 2)
+clus_id <- rep(1:num_clus, each = num_obs)
+sigma2 <- 0.5
+
+# Design matrix
+xw <- rnorm(num_clus * num_obs) # within component of X
+xw <- xw - ave(xw, clus_id)
+xw <- xw / mean(xw^2)
+xb <- rnorm(num_clus, sd = sqrt(vb_x)) # between component of X
+xb <- (xb - mean(xb) + 1)[clus_id]
+x <- xb + xw
+X <- cbind(1, x)
+Z <- Matrix::bdiag(
+    rep(list(matrix(1, nrow = num_obs, ncol = 2)), num_clus)
+) *
+    cbind(1, xw)[, rep(1:2, num_clus)]
+fixed <- X %*% gamma
+
+# Constant values
+sigmax <- matrix(c(0, 0, 0, mean((x - mean(x))^2)), nrow = 2)
+Kz <- sigmax + tcrossprod(c(1, mean(x))) # also Kz
+
+# Simulate data
+for (i in seq_len(nsim)) {
+    u <- MASS::mvrnorm(num_clus,
+        mu = rep(0, 2),
+        Sigma = D_mat * sigma2
+    )
+    y <- fixed + Z %*% c(t(u)) +
+        rnorm(num_clus * num_obs, sd = sqrt(sigma2))
+    dat <- data.frame(y = as.numeric(y), x = x, clus_id = clus_id,
+                      xw = xw, xc = x - mean(x))
+                      
+    m0unc <- lmer(y ~ x + (1 | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    m1unc <- lmer(y ~ x + (x | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    m0gmc <- lmer(y ~ xc + (1 | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    m1gmc <- lmer(y ~ xc + (xc | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    m0cmc <- lmer(y ~ x + (1 | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    m1cmc <- lmer(y ~ x + (xw | clus_id), data = dat,
+                  control = lmerControl(calc.derivs = FALSE))
+    out[[1]][, i] <- c(
+        fixef(m1unc)[["x"]]^2 * sigmax[2, 2],
+        VarCorr(m1unc)[["clus_id"]][c(1, 4)],
+        sigma(m1unc)^2,
+        fixef(m0unc)[["x"]]^2 * sigmax[2, 2],
+        m0unc@theta^2 * sigma(m0unc)^2,
+        sigma(m0unc)^2
+    )
+    out[[2]][, i] <- c(
+        fixef(m1gmc)[["xc"]]^2 * sigmax[2, 2],
+        VarCorr(m1gmc)[["clus_id"]][c(1, 4)],
+        sigma(m1gmc)^2,
+        fixef(m0gmc)[["xc"]]^2 * sigmax[2, 2],
+        m0gmc@theta^2 * sigma(m0gmc)^2,
+        sigma(m0gmc)^2
+    )
+    out[[3]][, i] <- c(
+        fixef(m1cmc)[["x"]]^2 * sigmax[2, 2],
+        VarCorr(m1cmc)[["clus_id"]][c(1, 4)],
+        sigma(m1cmc)^2,
+        fixef(m0cmc)[["x"]]^2 * sigmax[2, 2],
+        m0cmc@theta^2 * sigma(m0cmc)^2,
+        sigma(m0cmc)^2
+    )
+}
+```
+
+```{r}
+library(tidyr)
+library(ggplot2)
+# Change in fixed effect variance, random intercept variance, and sigma^2
+lapply(1:3, FUN = \(i) data.frame(t(out[[i]]), centering = names(out)[i])) |>
+    do.call(what = rbind) |>
+    pivot_longer(cols = fv_m1:sigmasq_m0,
+                 names_to = c("par", "model"),
+                 names_sep = "_") |>
+    ggplot(aes(x = par, y = value, color = model)) +
+    geom_boxplot() +
+    facet_wrap(~ centering)
+```
