@@ -8,7 +8,8 @@ bibliography: references.yaml
 csl: apa.csl
 format:
   revealjs:
-    embed-resources: true
+    # embed-resources: true
+    chalkboard: true
     slide-number: true
     df-print: paged
 ---
@@ -516,7 +517,7 @@ crossprod(X1, M_Z0) |>
 
 . . .
 
-- With unequal cluster means, $\bv Z_1^\top \bv Z_0$ $\neq$ $\bv 0$ and $\bv Z_1^\top \bv M_{Z_0}$ $\neq$ $\bv 0$
+- With nonzero cluster means, $\bv Z_1^\top \bv Z_0$ $\neq$ $\bv 0$ and $\bv Z_1^\top \bv M_{Z_0}$ $\neq$ $\bv 0$
 
 :::: {.columns}
 
@@ -548,7 +549,7 @@ t(M_Z0 %*% Z1) |> round(digits = 2)
 
 ::: {.incremental}
 - For general level-1 predictor
-    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to both the random intercept variance ($\tau_0^2$) and $\sigma^2$
+    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to the fixed effect, random intercept variance ($\tau_0^2$), and $\sigma^2$
 :::
 
 :::
@@ -569,7 +570,7 @@ t(M_Z0 %*% Z1) |> round(digits = 2)
 
 ::: {.incremental}
 - For purely level-1 predictor, $\bv Z_1^\top \bv Z_0$ = $\bv 0$
-    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to only $\sigma^2$
+    * Random slope variance ($\tau_1^2$), if omitted, will be redistributed to only fixed effect and $\sigma^2$
 :::
 
 :::
@@ -773,10 +774,17 @@ tau_mat <- VarCorr(m1)[[1]]
 
 ---
 
-Code Example {cont'd}
+## {.smaller}
+
+Code Example (cont'd)
+
+:::: {.columns}
+
+::: {.column width="60%"}
 
 ```{r}
 #| echo: true
+#| fig-show: hide
 library(r2mlm)
 library(MuMIn)
 # R^2 using formula, r2mlm::r2mlm(), and MuMIn::r.squaredGLMM()
@@ -784,6 +792,21 @@ list(formula = vf / (vf + vr + sigma(m1)^2),
      r2mlm = r2mlm(m1),
      MuMIn = MuMIn::r.squaredGLMM(m1))
 ```
+
+:::
+
+::: {.column width="40%"}
+
+```{r}
+#| out-width: 100%
+#| fig-width: 3.5
+#| results: hide
+r2mlm(m1)
+```
+
+:::
+
+::::
 
 ---
 
@@ -819,121 +842,22 @@ Sample estimator $d$: replace $\gamma$, $\tau^2_0$, and $\sigma^2$ with sample e
 
 ---
 
-With covariates $\bv X_2$, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + Z_{0j} u_{0j} + e_{ij}$
+More general form:
+
+$$
+\delta = \frac{\gamma}{\sqrt{\Tr [V(\bv X \bv \gamma | T) + V(\bv Z \bv u | T)] / N + \sigma^2}}
+$$
 
 . . .
 
-- $\vec{T}^\top \bv X_2 = \bv 0$ and no interactions
+::: {.callout-note}
 
-$$
-\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \tau^2_0 + \sigma^2}}
-$$
+## Choice of denominator
 
----
-
-With random slopes, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + \bv z^\top_{ij} \bv u_j + e_{ij}$
-
-. . .
-
-- and also $\vec{T}^\top \bv Z = \bv 0$
-
-$$
-\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \sigma^2[\Tr(\bv D \bv K_Z) + 1]}}
-$$
-
----
-
-##
-
-Code example (data)
-
-```{r}
-set.seed(1234)
-num_clus <- 30
-num_obs <- 5
-tau0sq <- 0.5
-tau1sq <- 0.2
-sigma2 <- 1
-clus_id <- rep(1:num_clus, each = num_obs)
-gamma1 <- 0.4
-gamma2 <- 0.2
-Z0 <- diag(num_clus) %x% rep(1, num_obs)
-treat <- rep(c(0, 1), each = num_clus / 2)
-x2 <- rbinom(num_obs * num_clus, size = 1, prob = 0.5)
-Z1 <- x2 * Z0
-# zu <- matrix(rnorm(num_clus * 2), nrow = num_clus)
-# W <- cbind(1, treat, crossprod(Z0, x2))
-# aW <- diag(nrow(W)) - W %*% solve(crossprod(W), t(W))
-# zu2 <- aW %*% zu
-# u <- zu2 %*% solve(chol(crossprod(zu2) / num_clus)) %*% diag(sqrt(c(tau0sq, tau1sq)))
-# Xu <- cbind(1, treat[clus_id], x2, u[clus_id, ])
-# aX <- diag(nrow(Xu)) - Xu %*% solve(crossprod(Xu), t(Xu))
-# ze <- rnorm(num_clus * num_obs)
-# ze2 <- aX %*% ze
-# e <- ze2 / sqrt(mean(ze2^2))
-u <- MASS::mvrnorm(num_clus, mu = rep(0, 2),
-                   Sigma = diag(c(tau0sq, tau1sq)))
-e <- rnorm(num_clus * num_obs)
-sim_data <- data.frame(
-    y = 3 + gamma1 * treat + gamma2 * x2 +
-        Z0 %*% u[, 1] + Z1 %*% u[, 2] + e,
-    treat = treat,
-    x2 = x2,
-    clus_id = clus_id
-)
-sim_data
-```
-
----
-
-Code example (cont'd)
-
-```{r}
-#| echo: true
-library(lme4)
-# Fit MLM
-m1 <- lmer(y ~ treat + x2 + (x2 | clus_id), data = sim_data)
-# Variance by x2
-Sigma_x <- with(sim_data, { x2c <- x2 - mean(x2); mean(x2c^2) })
-va_x2 <- Sigma_x * fixef(m1)[["x2"]]^2
-# Variance by random intercepts and random slopes
-# Using parameterization in lme4
-Kz <- crossprod(cbind(1, sim_data$x2)) / nrow(sim_data)
-va_z <- sum(VarCorr(m1)$clus_id * Kz)  # Tr(Tau, Kz)
-# Show all components
-c(gamma_1 = fixef(m1)[["treat"]], va_x2 = va_x2,
-  va_z = va_z, va_e = sigma(m1)^2)
-# Standardized effect size
-fixef(m1)[["treat"]] / sqrt(va_x2 + va_z + sigma(m1)^2)
-```
-
-```{r}
-#| eval: false
-with(sim_data, cov(cbind(treat - 0.5, x2 - mean(x2))))
-```
-
----
-
-## Additional Notes on SMD {.smaller}
-
-::: {.incremental}
-- *SE* and CI: Delta method, bootstrap, Bayesian [also approximate variance as in @hedges2009]
-- Using unadjusted (marginal) mean difference when $\vec{T}^\top \bv X_2 \neq \bv 0$
-    * Unadjusted mean difference:  
-    $E(Y | T = 1, \bv u)$ - $E(Y | T = 1, \bv u)$ = $\gamma_1 + \Sigma_{TT}^{-1} \bv \Sigma_{T X_2} \bv \gamma_2$^[$\Sigma_{TT} = {T^c}^\top {T^c}$, $\bv \Sigma_{T X_2} = {T^c}^\top \bv X_2^c$]
-    * Unadjusted within-arm variance by fixed effects:  
-    $V(\hat Y | T, \bv u) = \bv \gamma^\top \bv \Sigma_X \bv \gamma - \gamma_1^2 \Sigma_{TT} - 2 \gamma_1 \bv \Sigma_{T X_2} \bv \gamma_2^\top - \Sigma^{-1}_{TT} \bv \gamma_2^\top \bv \Sigma_{X_2 T} \bv \Sigma_{T X_2}$
-    * More complicated when $T$ also correlates with $\bv Z$
-:::
-
-## Additional Notes on SMD (cont'd)
-
-::: {.incremental}
-- Choice of denominator
-    * Square root of total variance should be default^[as recommended in the [What Works Clearinghouse handbook](https://ies.ed.gov/ncee/WWC/Docs/referenceresources/Final_WWC-HandbookVer5_0-0-508.pdf)]
-    * Longitudinal: between-person variance
-        * i.e., variance at time 0 (or time $t$?)
-    * Multisite trials: Exclude treatment effect heterogeneity (i.e., random slope of $T$)?
+- Square root of total variance should be default^[as recommended in the [What Works Clearinghouse handbook](https://ies.ed.gov/ncee/WWC/Docs/referenceresources/Final_WWC-HandbookVer5_0-0-508.pdf)]
+- Longitudinal: between-person variance
+    * i.e., variance at time 0 (or time $t$?)
+- Multisite trials: Exclude treatment effect heterogeneity (i.e., random slope of $T$)?
         * i.e., total variance without the intervention
 :::
 
@@ -983,8 +907,7 @@ fe <- fixef(m1)[2:3] %*% sigmax %*% fixef(m1)[2:3]
     `r tau_bmat`
     \end{bmatrix}$
 - $\Tr[V(\bv y)] / N$ = $\bv \gamma^\top \bv \Sigma_X \bv \gamma$ + $\sigma^2 [\Tr(\bv D \bv K_Z) + 1]$ = `r round(fe, 2)` + `r round(sum(Kz * tau_mat), 2)` + `r round(sigma(m1)^2, 2)` = `r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`
-- $\gamma^s_\text{ses}$ = `r round(fixef(m1)[2] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
-- $\gamma^s_\text{meanses}$ = `r round(fixef(m1)[3] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
+- $\gamma^s_\text{ses}$ = `r round(fixef(m1)[2], 2)` / $\sqrt{`r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`}$ = `r round(fixef(m1)[2] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`; $\gamma^s_\text{meanses}$ = `r round(fixef(m1)[3], 2)` / $\sqrt{`r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`}$ = `r round(fixef(m1)[3] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
 :::
 
 ## $f$ and $f^2$ Effect Size
@@ -993,7 +916,7 @@ $$
 f^2_\text{GLMM} = \frac{R_\text{GLMM}^2}{1 - R_\text{GLMM}^2}
 $$
 
-- For two-group designs, $2f$ = $d$
+- For two-group designs with one predictor, $2f$ = $d$
 
 # Design Effect {background-color="#595959"}
 
@@ -1150,7 +1073,7 @@ For coefficient $\gamma_k$
 
 $$
 \begin{aligned}
-\mathrm{Deff}(\hat \gamma_k) & = \frac{{\bv \Sigma^{-1}_{X}}_{kk} + \tilde n \left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk} \Tr(\bv D \bv K_Z) + 1} \\
+\mathrm{Deff}(\hat \gamma_k) & = \frac{\{\bv \Sigma^{-1}_{X}\}_{kk} + \tilde n \left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{\{\bv \Sigma^{-1}_X\}_{kk} [\Tr(\bv D \bv K_Z) + 1]} \\
 & = (1 - \textrm{ICC}_D) + (1 - \textrm{ICC}_D) \tilde n \frac{\left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk}}
 \end{aligned}
 $$
@@ -1242,7 +1165,7 @@ fe <- crossprod(gamma, sigmax %*% gamma)
 re <- (sum(D_mat * Kz) + 1) * sigma2
 r2 <- fe / (fe + re)
 # Print numbers
-c(icc = icc, r2 = r2)
+c(icc = icc, r2 = r2) |> round(digits = 3)
 ```
 
 ---
@@ -1326,7 +1249,7 @@ ggplot(data.frame(z = c(-3, 6)), aes(x = z)) +
 
 ---
 
-- Random slope 
+- Growth model example (Tx $\times$ time interaction)
     * Line: analytic formula; Points: 1,000 simulation samples
 
 ```{r}
@@ -1423,6 +1346,8 @@ ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
 
 ## Wait, This Is Not New . . .
 
+. . .
+
 - @snijders1993 also had closed-form expressions for $V(\hat \gamma^\text{GLS})$
     * Implemented in the PINT software^[https://www.stats.ox.ac.uk/~snijders/multilevel.htm#progPINT]
 - @murayama2022: summary-statistics-based power analysis^[Shiny app: <https://koumurayama.shinyapps.io/summary_statistics_based_power/>]
@@ -1436,30 +1361,7 @@ ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
 - Implementing formula-based approach in other software
 - Express $V(\hat \gamma^\text{GLS})$ in terms of effect sizes
 - Extend to models with other error covariance structure and more levels
-:::
-
----
-
-## Handling Nuisance Parameters in Power Analysis
-
-::: {.incremental}
-- There are many nuisance parameters (e.g., ICC, correlation among predictors) that affect power
-    * Usually we just choose some convenient values
-- A more disciplined approach: incorporate our uncertainty of those parameters as Bayesian priors
-    * See the [HCB shiny application](https://winnie-wy-tse.shinyapps.io/hcb_shiny/) by Winnie Tse
-:::
-
----
-
-::: {.r-stack}
-![](hcb_shiny1.png)
-
-![](hcb_shiny2.png){.fragment}
-:::
-
-::: aside
-Shiny app: <https://winnie-wy-tse.shinyapps.io/hcb_shiny/>\
-R package *hcbr*: <https://github.com/winniewytse/hcbr>
+- Handling uncertainty in nuisance parameters (e.g., ICC)^[see additional slides at the end]
 :::
 
 ## Summary
@@ -1469,12 +1371,12 @@ R package *hcbr*: <https://github.com/winniewytse/hcbr>
 - With random coefficients, one can do variance partitioning using the average variance of an observation
     * $\textrm{ICC}_D$ quantifies the proportion of variance due to random effects
     * $R^2$ quantifies the proportion of variance due to fixed effects
-- Standardized coefficients and standardized effect size can be defined
 :::
 
 ## Summary (cont'd)
 
 ::: {.incremental}
+- Standardized coefficients and standardized effect size can be defined
 - Design effect quantifies variance inflation of an estimator due to cluster sampling
     * Can be applied to fixed-effect estimators
 - Closed-form expression for power can be obtained from summary statistics
@@ -1483,6 +1385,7 @@ R package *hcbr*: <https://github.com/winniewytse/hcbr>
 ## More Questions
 
 ::: {.incremental}
+- What ranges of effect sizes do published MLM studies have?
 - What is the bias of sample $R^2$ estimator?
     * Can we compute adjusted $R^2$?
 - How can we obtain $\Delta R^2$ and CI?
@@ -1499,4 +1402,137 @@ If you have any suggestions or feedback, please email me at <hokchiol@usc.edu>
 ## References
 
 ::: {#refs}
+:::
+
+---
+
+## SMD With Covariates {visibility="uncounted"}
+
+With covariates $\bv X_2$, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + Z_{0j} u_{0j} + e_{ij}$
+
+. . .
+
+- $\vec{T}^\top \bv X_2 = \bv 0$ and no interactions
+
+$$
+\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \tau^2_0 + \sigma^2}}
+$$
+
+---
+
+## {visibility="uncounted"}
+
+With random slopes, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_2 + \bv z^\top_{ij} \bv u_j + e_{ij}$
+
+. . .
+
+- and also $\vec{T}^\top \bv Z = \bv 0$
+
+$$
+\delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \sigma^2[\Tr(\bv D \bv K_Z) + 1]}}
+$$
+
+## {visibility="uncounted"}
+
+Code example (data)
+
+```{r}
+set.seed(1234)
+num_clus <- 30
+num_obs <- 5
+tau0sq <- 0.5
+tau1sq <- 0.2
+sigma2 <- 1
+clus_id <- rep(1:num_clus, each = num_obs)
+gamma1 <- 0.4
+gamma2 <- 0.2
+Z0 <- diag(num_clus) %x% rep(1, num_obs)
+treat <- rep(c(0, 1), each = num_clus / 2)
+x2 <- rbinom(num_obs * num_clus, size = 1, prob = 0.5)
+Z1 <- x2 * Z0
+# zu <- matrix(rnorm(num_clus * 2), nrow = num_clus)
+# W <- cbind(1, treat, crossprod(Z0, x2))
+# aW <- diag(nrow(W)) - W %*% solve(crossprod(W), t(W))
+# zu2 <- aW %*% zu
+# u <- zu2 %*% solve(chol(crossprod(zu2) / num_clus)) %*% diag(sqrt(c(tau0sq, tau1sq)))
+# Xu <- cbind(1, treat[clus_id], x2, u[clus_id, ])
+# aX <- diag(nrow(Xu)) - Xu %*% solve(crossprod(Xu), t(Xu))
+# ze <- rnorm(num_clus * num_obs)
+# ze2 <- aX %*% ze
+# e <- ze2 / sqrt(mean(ze2^2))
+u <- MASS::mvrnorm(num_clus, mu = rep(0, 2),
+                   Sigma = diag(c(tau0sq, tau1sq)))
+e <- rnorm(num_clus * num_obs)
+sim_data <- data.frame(
+    y = 3 + gamma1 * treat + gamma2 * x2 +
+        Z0 %*% u[, 1] + Z1 %*% u[, 2] + e,
+    treat = treat,
+    x2 = x2,
+    clus_id = clus_id
+)
+sim_data
+```
+
+## {visibility="uncounted"}
+
+Code example (cont'd)
+
+```{r}
+#| echo: true
+library(lme4)
+# Fit MLM
+m1 <- lmer(y ~ treat + x2 + (x2 | clus_id), data = sim_data)
+# Variance by x2
+Sigma_x <- with(sim_data, { x2c <- x2 - mean(x2); mean(x2c^2) })
+va_x2 <- Sigma_x * fixef(m1)[["x2"]]^2
+# Variance by random intercepts and random slopes
+# Using parameterization in lme4
+Kz <- crossprod(cbind(1, sim_data$x2)) / nrow(sim_data)
+va_z <- sum(VarCorr(m1)$clus_id * Kz)  # Tr(Tau, Kz)
+# Show all components
+c(gamma_1 = fixef(m1)[["treat"]], va_x2 = va_x2,
+  va_z = va_z, va_e = sigma(m1)^2)
+# Standardized effect size
+fixef(m1)[["treat"]] / sqrt(va_x2 + va_z + sigma(m1)^2)
+```
+
+```{r}
+#| eval: false
+with(sim_data, cov(cbind(treat - 0.5, x2 - mean(x2))))
+```
+
+## Additional Notes on SMD {.smaller visibility="uncounted"}
+
+::: {.incremental}
+- *SE* and CI: Delta method, bootstrap, Bayesian [also approximate variance as in @hedges2009]
+- Using unadjusted (marginal) mean difference when $\vec{T}^\top \bv X_2 \neq \bv 0$
+    * Unadjusted mean difference:  
+    $E(Y | T = 1, \bv u)$ - $E(Y | T = 1, \bv u)$ = $\gamma_1 + \Sigma_{TT}^{-1} \bv \Sigma_{T X_2} \bv \gamma_2$^[$\Sigma_{TT} = {T^c}^\top {T^c}$, $\bv \Sigma_{T X_2} = {T^c}^\top \bv X_2^c$]
+    * Unadjusted within-arm variance by fixed effects:  
+    $V(\hat Y | T, \bv u) = \bv \gamma^\top \bv \Sigma_X \bv \gamma - \gamma_1^2 \Sigma_{TT} - 2 \gamma_1 \bv \Sigma_{T X_2} \bv \gamma_2^\top - \Sigma^{-1}_{TT} \bv \gamma_2^\top \bv \Sigma_{X_2 T} \bv \Sigma_{T X_2}$
+    * More complicated when $T$ also correlates with $\bv Z$
+:::
+
+## Handling Nuisance Parameters in Power Analysis {visibility="uncounted"}
+
+::: {.incremental}
+- There are many nuisance parameters (e.g., ICC, correlation among predictors) that affect power
+    * Usually we just choose some convenient values
+- A more disciplined approach: incorporate our uncertainty of those parameters as Bayesian priors
+    * See the [HCB shiny application](https://winnie-wy-tse.shinyapps.io/hcb_shiny/) by Winnie Tse
+:::
+
+---
+
+## {visibility="uncounted"}
+
+::: {.r-stack}
+![](hcb_shiny1.png)
+
+![](hcb_shiny2.png){.fragment}
+:::
+
+::: aside
+Shiny app: <https://winnie-wy-tse.shinyapps.io/hcb_shiny/>\
+R package *hcbr*: <https://github.com/winniewytse/hcbr>
 :::
