@@ -12,6 +12,8 @@ format:
     chalkboard: true
     slide-number: true
     df-print: paged
+# nocite: |
+#   @lai2014, @lai2016, @lai2021, @lai2019, @luo2021, @hsiao2018, @lai2021a, @zhang2024
 ---
 
 ## My Journey in Multilevel Modeling (MLM)
@@ -40,20 +42,20 @@ theme_set(theme_bw())
 ## The Journey Continues . . .
 
 ::: {.callout}
-- Standardized effect size [@lai2014; @lai2016; @lai2021]
-- Cross-classified models [@lai2014; @lai2019]
-- Bootstrapping [@lai2021; @luo2021]
-- Survey sampling [@lai2018; @luo2021]
-- Measurement invariance [@hsiao2018]
-- Reliability [@lai2021a]
-- Heteroscedasticity [@zhang2024]
+- Standardized effect size
+- Cross-classified models
+- Bootstrapping
+- Survey sampling
+- Measurement invariance
+- Reliability
+- Heteroscedasticity
 :::
 
 . . . 
 
 Basically things we routinely do in regression, but not yet so with MLM
 
-## Background of This Talk
+## Background of This Talk {visibility="hidden"}
 
 ::: {.incremental}
 - Power analysis
@@ -70,7 +72,7 @@ Basically things we routinely do in regression, but not yet so with MLM
 - Multicollinearity and variance partitioning (with Venn diagrams)
 - Standardized effect size
 - Design effect/variance inflation
-- Power analysis
+    * Power analysis
 :::
 
 <!-- ---
@@ -244,22 +246,6 @@ $$
     $$
 - $\bv u$ and $\bv e$ are mutually independent, and both are indepedent of $\bv X$ and $\bv Z$
 :::
-
-## Total Variance of $\bv y$
-
-Conditional on $\bv X$
-
-$$
-V(\bv Z \bv u + \bv e) = \sigma^2 \bv V = \sigma^2 [\bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I],
-$$
-
-. . .
-
-Unconditional ($\bv X^c$ = grand-mean centered $\bv X$)
-
-$$
-\underbrace{\bv X^c \bv \gamma \bv \gamma^\top {\bv X^c}^\top}_{\text{fixed}} + \underbrace{\sigma^2 \bv Z (\bv D \otimes \bv I_J) \bv Z^\top}_{\text{random lv-2}} + \underbrace{\sigma^2 \bv I}_{\text{random lv-1}}.
-$$
 
 # Multicollinearity {background-color="#595959"}
 
@@ -585,7 +571,7 @@ t(M_Z0 %*% Z1) |> round(digits = 2)
 
 ## Revisiting @lai2015
 
-Using simulation, we found that, when clustering is ignored, SE of the following is underestimated 
+Using simulations, we found that, when clustering is ignored, SEs of the following are underestimated 
 
 ::: {.incremental}
 - Lv-2 predictor
@@ -597,7 +583,39 @@ Using simulation, we found that, when clustering is ignored, SE of the following
 
 > Because they all correlate with $\bv Z$!
 
+---
+
+::: {.callout}
+
+## Additional Questions
+
+::: {.incremental}
+- Can we use this framework to quantify model misspecification?
+    - How does omitting components of $X$ affect estimates of $\gamma$ and $\tau$?
+    - How does omitting components of $Z$ affect estimates of $\gamma$ and $\tau$?
+- How do we generalized beyond two-level models?
+    * E.g., Crossed random effects [e.g., @lai2019]^[see additional slide at the end]
+:::
+
+:::
+
 # Effect Size {background-color="#595959"}
+
+## Total Variance of $\bv y$
+
+Conditional on $\bv X$
+
+$$
+V(\bv Z \bv u + \bv e) = \sigma^2 \bv V = \sigma^2 [\bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I],
+$$
+
+. . .
+
+Unconditional ($\bv X^c$ = grand-mean centered $\bv X$)
+
+$$
+\underbrace{\bv X^c \bv \gamma \bv \gamma^\top {\bv X^c}^\top}_{\text{fixed}} + \underbrace{\sigma^2 \bv Z (\bv D \otimes \bv I_J) \bv Z^\top}_{\text{random lv-2}} + \underbrace{\sigma^2 \bv I}_{\text{random lv-1}}.
+$$
 
 ## Average Variance of Each Observation
 
@@ -709,37 +727,11 @@ $$
 R^2_\text{GLMM} = \frac{\bv \gamma^\top \bv \Sigma_X \bv \gamma}{\bv \gamma^\top \bv \Sigma_X \bv \gamma + \sigma^2 [\Tr(\bv D \bv K_Z) + 1]}.
 $$
 
-Also
+<!-- Also
 
 $$
-\sigma^2 [\Tr(\bv D \bv K_Z) + 1] = 1 - R^2_\text{GLMM}
-$$
-
----
-
-::: {.callout-tip}
-
-## (Unconditional) ICC and $R^2$
-
-From a random-intercepts model without fixed-effect predictors,
-
-ICC = maximum $R^2$ for a level-2 predictor
-
-1 - ICC = maximum $R^2$ for a purely level-1 predictor
-
-:::
-
-::: {.callout-tip}
-
-## (Conditional) ICC and $R^2$
-
-From a conditional model with fixed-effect predictors,
-
-ICC = Proportion of variance accounted for by level-2 random effects
-
-$R^2$ = Proportion of variance accounted for by all fixed-effect predictors
-
-:::
+\sigma^2 [\Tr(\bv D \bv K_Z) + 1] = (1 - R^2_\text{GLMM}) V(y)
+$$ -->
 
 ## {.smaller}
 
@@ -771,8 +763,6 @@ Kz <- sigmaz + tcrossprod(c(1, mean(Hsb82$ses)))
 tau_mat <- VarCorr(m1)[[1]]
 (vr <- sum(Kz * tau_mat))
 ```
-
----
 
 ## {.smaller}
 
@@ -816,6 +806,20 @@ Confidence interval of $R^2$
 - Bootstrapping (with `lme4::bootMer()` or R package *bootmlm*)^[see this blog post: <https://quantscience.rbind.io/posts/2022-05-12-confidence-intervals-for-multilevel-r-squared/>]
 - Bayesian estimation
 
+. . .
+
+::: {.callout}
+
+## Additional Questions
+
+::: {.incremental}
+- What is the bias of sample $R^2$ estimator?
+    * Can we compute adjusted $R^2$?
+<!-- - How can we obtain $\Delta R^2$ (using only one model) and CI? -->
+:::
+
+:::
+
 ## Standardized Mean Difference
 
 SMD = Mean difference / $\mathit{SD}_p$^[$\mathit{SD}_p$ = pooled within-arm standard deviation]
@@ -845,20 +849,33 @@ Sample estimator $d$: replace $\gamma$, $\tau^2_0$, and $\sigma^2$ with sample e
 More general form:
 
 $$
-\delta = \frac{\gamma}{\sqrt{\Tr [V(\bv X \bv \gamma | T) + V(\bv Z \bv u | T)] / N + \sigma^2}}
+\delta = \frac{\text{adjusted/unadjusted treatment effect}}{\sqrt{\text{average conditional variance of } \bv y}}
 $$
 
 . . .
 
-::: {.callout-note}
+$$
+\delta = \frac{E[E(Y | T = 1)- E(Y | T = 0) | \bv C]}{\sqrt{\Tr [V(\bv X \bv \gamma | T) + V(\bv Z \bv u | T)] / N + \sigma^2}}
+$$
 
-## Choice of denominator
+where $\bv C$ is the subset of covariates for adjusted differences
 
-- Square root of total variance should be default^[as recommended in the [What Works Clearinghouse handbook](https://ies.ed.gov/ncee/WWC/Docs/referenceresources/Final_WWC-HandbookVer5_0-0-508.pdf)]
-- Longitudinal: between-person variance
-    * i.e., variance at time 0 (or time $t$?)
-- Multisite trials: Exclude treatment effect heterogeneity (i.e., random slope of $T$)?
-        * i.e., total variance without the intervention
+## Linking $R^2$ to $\delta$
+
+$$
+f^2_\text{GLMM} = \frac{R_\text{GLMM}^2}{1 - R_\text{GLMM}^2}
+$$
+
+- For two-group designs with one predictor, $2f$ = $d$
+
+. . .
+
+::: {.callout}
+
+## Additional Questions
+
+- What ranges of effect sizes do published MLM studies have?
+
 :::
 
 ## Standardized Coefficients
@@ -910,14 +927,6 @@ fe <- fixef(m1)[2:3] %*% sigmax %*% fixef(m1)[2:3]
 - $\gamma^s_\text{ses}$ = `r round(fixef(m1)[2], 2)` / $\sqrt{`r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`}$ = `r round(fixef(m1)[2] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`; $\gamma^s_\text{meanses}$ = `r round(fixef(m1)[3], 2)` / $\sqrt{`r round(fe + sum(Kz * tau_mat) + sigma(m1)^2, 2)`}$ = `r round(fixef(m1)[3] * sd(Hsb82$ses) / sqrt(fe + sum(Kz * tau_mat) + sigma(m1)^2), 2)`
 :::
 
-## $f$ and $f^2$ Effect Size
-
-$$
-f^2_\text{GLMM} = \frac{R_\text{GLMM}^2}{1 - R_\text{GLMM}^2}
-$$
-
-- For two-group designs with one predictor, $2f$ = $d$
-
 # Design Effect {background-color="#595959"}
 
 ## Design Effect/Variance Inflation
@@ -942,6 +951,10 @@ $$
 
 ---
 
+:::: {.columns}
+
+::: {.column width="65%"}
+
 ::: {.callout-important}
 
 ## $\mathrm{Deff}(\hat \mu)$ Does Not Inform About Random Slopes
@@ -949,6 +962,16 @@ $$
 - Even when $\mathrm{Deff}(\hat \mu)$ is close to 1, random slope variance $\tau^2_1$ can still be large
     * Random slopes can be independent from random intercepts
 :::
+
+:::
+
+::: {.column width="35%"}
+
+![](venn_uncorr_z0z1.png)
+
+:::
+
+::::
 
 . . .
 
@@ -1009,8 +1032,6 @@ where $\tilde \sigma^2 = \sigma^2 [\Tr(\bv D \bv K_Z) + 1]$
 ::: aside
 $\bv V = \bv Z (\bv D \otimes \bv I_J) \bv Z^\top + \bv I$
 :::
-
----
 
 ## {.smaller}
 
@@ -1073,8 +1094,8 @@ For coefficient $\gamma_k$
 
 $$
 \begin{aligned}
-\mathrm{Deff}(\hat \gamma_k) & = \frac{\{\bv \Sigma^{-1}_{X}\}_{kk} + \tilde n \left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{\{\bv \Sigma^{-1}_X\}_{kk} [\Tr(\bv D \bv K_Z) + 1]} \\
-& = (1 - \textrm{ICC}_D) + (1 - \textrm{ICC}_D) \tilde n \frac{\left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk}}
+\mathrm{Deff}(\hat \gamma_k) & = \frac{\{\bv \Sigma^{-1}_{X}\}_{kk} + n \left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{\{\bv \Sigma^{-1}_X\}_{kk} [\Tr(\bv D \bv K_Z) + 1]} \\
+& = (1 - \textrm{ICC}_D) + (1 - \textrm{ICC}_D) n \frac{\left[\bv \Sigma^{-1}_X \bv G \bv \Sigma^{-1}_X\right]_{kk}}{{\bv \Sigma^{-1}_X}_{kk}}
 \end{aligned}
 $$
 
@@ -1088,8 +1109,6 @@ $$
 > If a sample size of $N_0$ is needed to detect $\hat \gamma$ with power $\beta$ in SRS, a sample size of approximately $N_0 \mathrm{Deff}(\hat \gamma)$ is needed in MLM for the same level of power -->
 
 ---
-
-##
 
 Example: Growth curve modeling with Tx $\times$ slope interaction
 
@@ -1165,7 +1184,7 @@ fe <- crossprod(gamma, sigmax %*% gamma)
 re <- (sum(D_mat * Kz) + 1) * sigma2
 r2 <- fe / (fe + re)
 # Print numbers
-c(icc = icc, r2 = r2) |> round(digits = 3)
+c(icc_d = icc, r2_GLMM = r2) |> round(digits = 3)
 ```
 
 ---
@@ -1203,13 +1222,11 @@ m0 <- lm(y ~ treat * time, data = dat)
 diag(vcov(m1)) / diag(vcov(m0))
 ```
 
-# Power Analysis {background-color="#595959"}
-
 ## Power Analysis
 
 :::: {.columns}
 
-::: {.column width="55%"}
+::: {.column width="60%"}
 
 For $H_0$: $\gamma_k = 0$
 
@@ -1219,14 +1236,15 @@ For $H_0$: $\gamma_k = 0$
 
 :::
 
-::: {.column width="45%"}
+::: {.column width="40%"}
 
 ```{r}
 #| fig-width: 2.5
 #| fig-height: 2.5
 #| out-width: 100%
 ggplot(data.frame(z = c(-3, 6)), aes(x = z)) +
-    stat_function(fun = dnorm, linewidth = 1, aes(col = "H0")) +
+    stat_function(fun = dnorm, linewidth = 1, aes(col = "H0"),
+    linetype = "dashed") +
     stat_function(fun = dnorm, 
                   args = list(mean = 1.5), linewidth = 1, aes(col = "H1")) +
     geom_area(stat = "function",
@@ -1344,26 +1362,6 @@ ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
     labs(y = "Power", col = "Test")
 ```
 
-## Wait, This Is Not New . . .
-
-. . .
-
-- @snijders1993 also had closed-form expressions for $V(\hat \gamma^\text{GLS})$
-    * Implemented in the PINT software^[https://www.stats.ox.ac.uk/~snijders/multilevel.htm#progPINT]
-- @murayama2022: summary-statistics-based power analysis^[Shiny app: <https://koumurayama.shinyapps.io/summary_statistics_based_power/>]
-    * Primarily useful when prior studies reported relevant $t$ statistic
-
----
-
-### What can still be done?
-
-::: {.incremental}
-- Implementing formula-based approach in other software
-- Express $V(\hat \gamma^\text{GLS})$ in terms of effect sizes
-- Extend to models with other error covariance structure and more levels
-- Handling uncertainty in nuisance parameters (e.g., ICC)^[see additional slides at the end]
-:::
-
 ## Summary
 
 ::: {.incremental}
@@ -1382,29 +1380,87 @@ ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
 - Closed-form expression for power can be obtained from summary statistics
 :::
 
-## More Questions
-
-::: {.incremental}
-- What ranges of effect sizes do published MLM studies have?
-- What is the bias of sample $R^2$ estimator?
-    * Can we compute adjusted $R^2$?
-- How can we obtain $\Delta R^2$ and CI?
-- How does omitting $X$ affect estimates of $\gamma$ and $\tau$?
-- How does omitting $Z$ affect estimates of $\gamma$ and $\tau$?
-- How do we generalized beyond two-level models?
-    * E.g., Crossed random effects [e.g., @lai2019]
-:::
-
 # Thank You!
 
 If you have any suggestions or feedback, please email me at <hokchiol@usc.edu>
 
-## References
+## References {visibility="uncounted"}
 
 ::: {#refs}
 :::
 
----
+# Supplemental Slides {background-color="#595959" visibility="uncounted"}
+
+## {.smaller visibility="uncounted"}
+
+::: {.callout}
+
+## Multicollinearity with Crossed Random Effects
+
+$$
+\bv y = \bv X \bv \gamma + \bv Z_A \bv \tau_A + \bv Z_B \bv \tau_B + \epsilon
+$$
+
+- $(\bv M_{X_0} \bv Z_A)^\top \bv M_{X_0} \bv Z_B$ = collinearity between the two crossed levels^[$\bv M_{X_0}$ is the residual maker matrix for the vector of 1s.]
+- When there are only random intercepts at Levels A and B, 
+    * For balanced designs (i.e., fully crossed), $\bv Z_A$ and $\bv Z_B$ are orthogonal (i.e., $\bv M_{X_0} \bv Z_A^\top \bv M_{X_0} \bv Z_B$ = $\bv 0$)
+        * If Level B is omitted, its variance goes to Level 1
+    * For unbalanced designs (i.e., partially crossed)
+        * If Level B is omitted, some of its variance goes to Level A
+
+```{r}
+#| echo: true
+#| output-location: column
+# Sample data of fully crossed random effects
+library(lme4)
+fm1 <- lmer(strength ~ (1 | batch) + (1 | cask), data = Pastes)
+Z <- getME(fm1, "Z")
+Z0A <- Z[, 1:10]
+Z0B <- Z[, 11:13]
+crossprod(Z0B, Z0A)  # balanced design
+```
+
+```{r}
+#| echo: true
+#| output-location: column
+# Sample data of fully crossed random effects
+# Residual maker for grand intercept
+MX0 <- diag(nrow(Z)) - matrix(1 / 60, nrow = nrow(Z), ncol = nrow(Z))
+# Cross-product is zero
+crossprod(MX0 %*% Z0B, MX0 %*% Z0A) |> round(digits = 2)
+```
+
+:::
+
+::: aside
+See @lai2019 and @luo2009 for more in-depth discussion
+:::
+
+## {visibility="uncounted"}
+
+::: {.callout-tip}
+
+## (Unconditional) ICC and $R^2$
+
+From a random-intercepts model without fixed-effect predictors,
+
+ICC = maximum $R^2$ for a level-2 predictor
+
+1 - ICC = maximum $R^2$ for a purely level-1 predictor
+
+:::
+
+::: {.callout-tip}
+
+## (Conditional) ICC and $R^2$
+
+From a conditional model with fixed-effect predictors,
+
+ICC = Proportion of variance accounted for by level-2 random effects
+
+$R^2$ = Proportion of variance accounted for by all fixed-effect predictors
+
+:::
 
 ## SMD With Covariates {visibility="uncounted"}
 
@@ -1417,8 +1473,6 @@ With covariates $\bv X_2$, $Y_{ij} = T_j \gamma_1 + \bv x^\top_{2ij} \bv \gamma_
 $$
 \delta = \frac{\gamma_1}{\sqrt{\bv \gamma_2^\top \bv \Sigma_{X_2} \bv \gamma_2 + \tau^2_0 + \sigma^2}}
 $$
-
----
 
 ## {visibility="uncounted"}
 
@@ -1513,6 +1567,36 @@ with(sim_data, cov(cbind(treat - 0.5, x2 - mean(x2))))
     * More complicated when $T$ also correlates with $\bv Z$
 :::
 
+## Choice of Denominator in SMD {visibility="uncounted"}
+
+- Square root of total variance should be default^[as recommended in the [What Works Clearinghouse handbook](https://ies.ed.gov/ncee/WWC/Docs/referenceresources/Final_WWC-HandbookVer5_0-0-508.pdf)]
+- Longitudinal: between-person variance
+    * i.e., variance at time 0 (or time $t$?)
+- Multisite trials: Exclude treatment effect heterogeneity (i.e., random slope of $T$)?
+    * i.e., total variance without the intervention
+
+# Power Analysis {background-color="#595959" visibility="uncounted"}
+
+## Wait, This Is Not New . . . {visibility="uncounted"}
+
+. . .
+
+- @snijders1993 also had closed-form expressions for $V(\hat \gamma^\text{GLS})$
+    * Implemented in the PINT software^[https://www.stats.ox.ac.uk/~snijders/multilevel.htm#progPINT]
+- @murayama2022: summary-statistics-based power analysis^[Shiny app: <https://koumurayama.shinyapps.io/summary_statistics_based_power/>]
+    * Primarily useful when prior studies reported relevant $t$ statistic
+
+## {visibility="uncounted"}
+
+### What can still be done?
+
+::: {.incremental}
+- Implementing formula-based approach in other software
+- Express $V(\hat \gamma^\text{GLS})$ in terms of effect sizes
+- Extend to models with other error covariance structure and more levels
+- Handling uncertainty in nuisance parameters (e.g., ICC)^[see additional slides at the end]
+:::
+
 ## Handling Nuisance Parameters in Power Analysis {visibility="uncounted"}
 
 ::: {.incremental}
@@ -1521,8 +1605,6 @@ with(sim_data, cov(cbind(treat - 0.5, x2 - mean(x2))))
 - A more disciplined approach: incorporate our uncertainty of those parameters as Bayesian priors
     * See the [HCB shiny application](https://winnie-wy-tse.shinyapps.io/hcb_shiny/) by Winnie Tse
 :::
-
----
 
 ## {visibility="uncounted"}
 
