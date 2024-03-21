@@ -75,6 +75,12 @@ Basically things we routinely do in regression, but not yet so with MLM
     * Power analysis
 :::
 
+::: aside
+Slides available at <https://quantscience.rbind.io/presentation>
+
+Source code available at <https://github.com/marklhc/unlock_mlm_equation>
+:::
+
 <!-- ---
 
 Applying concepts in regression to understand the multilevel equations
