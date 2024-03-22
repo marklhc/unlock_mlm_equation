@@ -8,23 +8,15 @@ bibliography: references.yaml
 csl: apa.csl
 format:
   revealjs:
-    # embed-resources: true
-    chalkboard: true
+    embed-resources: true
+    # chalkboard: true
     slide-number: true
     df-print: paged
 # nocite: |
 #   @lai2014, @lai2016, @lai2021, @lai2019, @luo2021, @hsiao2018, @lai2021a, @zhang2024
 ---
 
-## My Journey in Multilevel Modeling (MLM)
-
-$$
-\DeclareMathOperator{\Tr}{Tr}
-\DeclareMathOperator{\diag}{diag}
-\DeclareMathOperator{\cov}{Cov}
-\DeclareMathOperator{\null}{N}
-\newcommand{\bv}[1]{\boldsymbol{\mathbf{#1}}}
-$$
+## My Journey in Multilevel Modeling (MLM) {visibility="hidden"}
 
 ```{r}
 library(ggplot2)
@@ -39,15 +31,14 @@ theme_set(theme_bw())
 ![](deff_jxe.png){.fragment .absolute left=300 top=200 width="800"}
 :::
 
-## The Journey Continues . . .
+## The Journey Continues . . . {visibility="hidden"}
 
 ::: {.callout}
 - Standardized effect size
 - Cross-classified models
 - Bootstrapping
 - Survey sampling
-- Measurement invariance
-- Reliability
+- Measurement (invariance, reliability, factor analysis)
 - Heteroscedasticity
 :::
 
@@ -72,8 +63,16 @@ Basically things we routinely do in regression, but not yet so with MLM
 - Multicollinearity and variance partitioning (with Venn diagrams)
 - Standardized effect size
 - Design effect/variance inflation
-    * Power analysis
+- Power analysis
 :::
+
+$$
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\cov}{Cov}
+\DeclareMathOperator{\null}{N}
+\newcommand{\bv}[1]{\boldsymbol{\mathbf{#1}}}
+$$
 
 ::: aside
 Slides available at <https://quantscience.rbind.io/presentation>
@@ -129,7 +128,7 @@ ztex <- apply(cbind(Z0, Z1), MARGIN = 1,
               paste0(collapse = " \\\\")
 utex <- outer(1:2, Y = 0:1, FUN = \(x, y) paste0("\\color{blue}{{u_{", y, x, "}}}")) |>
     paste0(collapse = " \\\\")
-etex <- outer(1:5, Y = 1:2, FUN = \(x, y) paste0("e_{", y, x, "}")) |>
+etex <- outer(1:4, Y = 1:2, FUN = \(x, y) paste0("e_{", y, x, "}")) |>
     paste0(collapse = " \\\\")
 tex_lst <- list(y = ytex, x = xtex, gam = gammatex,
                 z = ztex, u = utex, e = etex)
@@ -193,7 +192,7 @@ utex <- outer(1:2, Y = 0:1, FUN = \(x, y) {
     ifelse(x == 1, yes = make_col(out, color = "orange"), no = out)
 }) |>
     paste0(collapse = " \\\\")
-etex <- outer(1:5, Y = 1:2, FUN = \(x, y) {
+etex <- outer(1:4, Y = 1:2, FUN = \(x, y) {
     out <- paste0("e_{", y, x, "}")
     ifelse(y == 1, yes = make_col(out, color = "orange"), no = out)
     }) |>
@@ -240,14 +239,14 @@ $$
 
 ::: {.incremental}
 - $\bv Z$ = $[\bv Z_0 \cdots \bv Z_{q - 1}]$, and each component is block-diagonal
-- $\bv e$ is a vector of error;^[or $V(\bv e) = \sigma^2 \bv R$ for autocorrelations/heteroscedasticity] $V(\bv e) = \sigma^2 \bv I$
+- $\bv e$ is a vector of errors;^[or $V(\bv e) = \sigma^2 \bv R$ for autocorrelations/heteroscedasticity] $V(\bv e) = \sigma^2 \bv I$
 - $\bv u$: vector of length $q J$ of random effects; $V(\bv u_j) = \bv T = \sigma^2 \bv D \quad \forall j$\
     $$
     \bv D = \begin{bmatrix}
-      \tau_0^2 / \sigma^2 & & & \\
-      \tau_{01} / \sigma^2 & \tau_1^2 / \sigma^2 & & \\
+      \tau_0^2 \color{gold}{{/ \sigma^2}} & & & \\
+      \tau_{01} \color{gold}{{/ \sigma^2}} & \tau_1^2 \color{gold}{{/ \sigma^2}} & & \\
       \vdots & \cdots & \ddots & \\
-      \tau_{0 q -1} / \sigma^2 & \tau_{1 q -1} / \sigma^2 & \cdots & \tau^2_{q - 1} / \sigma^2 \\
+      \tau_{0 q -1} \color{gold}{{/ \sigma^2}} & \tau_{1 q -1} \color{gold}{{/ \sigma^2}} & \cdots & \tau^2_{q - 1} \color{gold}{{/ \sigma^2}} \\
     \end{bmatrix}
     $$
 - $\bv u$ and $\bv e$ are mutually independent, and both are indepedent of $\bv X$ and $\bv Z$
@@ -263,17 +262,38 @@ In regression, we look at
 
 . . .
 
-If $X_1$ and $X_2$ are uncorrelated, ${\bv x_1^c}^\top \bv x_2^c = 0$, and variance accounted for by the two predictors are separate
-
 :::: {.columns}
 
-::: {.column width="50%"}
+::: {.column width="60%"}
+
+If $X_1$ and $X_2$ are uncorrelated, ${\bv x_1^c}^\top \bv x_2^c = 0$, and variance accounted for by the two predictors are separate
+
+:::
+
+::: {.column width="40%"}
 
 ![](venn_uncorr_x1x2.png){fig-alt="Venn Diagram of uncorrelated predictors" width="60%" fig-align="center"}
 
 :::
 
-::: {.column width="50%"}
+::::
+
+---
+
+If $X_1$ and $X_2$ are correlated, ${\bv x_1^c}^\top \bv x_2^c \neq 0$, then adding $X_2$ . . .
+
+. . .
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+- changes the coefficient of $X_1$, and
+- increases the standard error of the coefficient
+
+:::
+
+::: {.column width="40%"}
 
 ![](venn_corr_x1x2.png){fig-alt="Venn Diagram of correlated predictors" width="60%" fig-align="center"}
 
@@ -581,7 +601,7 @@ Using simulations, we found that, when clustering is ignored, SEs of the followi
 
 ::: {.incremental}
 - Lv-2 predictor
-- Lv-1 predictor with lv-2 variance (i.e., unequal cluster means)
+- General Lv-1 predictor (i.e., with unequal cluster means)
 - Lv-1 predictor with random slopes
 :::
 
@@ -599,7 +619,7 @@ Using simulations, we found that, when clustering is ignored, SEs of the followi
 - Can we use this framework to quantify model misspecification?
     - How does omitting components of $X$ affect estimates of $\gamma$ and $\tau$?
     - How does omitting components of $Z$ affect estimates of $\gamma$ and $\tau$?
-- How do we generalized beyond two-level models?
+- How do we generalize this beyond two-level models?
     * E.g., Crossed random effects [e.g., @lai2019]^[see additional slide at the end]
 :::
 
@@ -1383,7 +1403,7 @@ ggplot(data.frame(pow), aes(x = J, y = wald, color = "wald")) +
 - Standardized coefficients and standardized effect size can be defined
 - Design effect quantifies variance inflation of an estimator due to cluster sampling
     * Can be applied to fixed-effect estimators
-- Closed-form expression for power can be obtained from summary statistics
+- Closed-form expression for power can be obtained using summary statistics
 :::
 
 # Thank You!
